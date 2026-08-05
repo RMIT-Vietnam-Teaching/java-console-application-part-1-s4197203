@@ -313,14 +313,16 @@ public class ConsoleUI {
             System.out.println("\n--- Insurance Cards ---");
             System.out.println("  1. View All Cards");
             System.out.println("  2. Add New Card");
-            System.out.println("  3. Delete Card");
-            System.out.println("  4. Back to Main Menu");
-            int choice = input.promptInt("Choose an option: ", 1, 4);
+            System.out.println("  3. Update Card");
+            System.out.println("  4. Delete Card");
+            System.out.println("  5. Back to Main Menu");
+            int choice = input.promptInt("Choose an option: ", 1, 5);
             switch (choice) {
                 case 1: viewAllCards(); break;
                 case 2: addCard(); break;
-                case 3: deleteCard(); break;
-                case 4: return;
+                case 3: updateCard(); break;
+                case 4: deleteCard(); break;
+                case 5: return;
             }
         }
     }
@@ -363,6 +365,38 @@ public class ConsoleUI {
             System.out.println("  Error: " + error);
         } else {
             System.out.println("  Card added successfully.");
+        }
+    }
+
+    private void updateCard() {
+        System.out.println("\n--- Update Insurance Card ---");
+        String cardNumber = input.promptString("Card Number to update: ");
+        InsuranceCard card = manager.getCardByNumber(cardNumber);
+        if (card == null) {
+            System.out.println("  Card not found.");
+            return;
+        }
+        System.out.println("  Current: Holder=" + card.getCardHolderId() +
+                " | Owner=" + card.getPolicyOwnerId() +
+                " | Expires=" + card.getExpirationDate().format(DATE_FMT));
+        System.out.println("  (Leave blank to keep current value)");
+        String newHolderId = input.promptOptionalString("New Holder ID");
+        String newOwnerId = input.promptOptionalString("New Owner ID");
+        String expStr = input.promptOptionalString("New Expiration Date (yyyy-MM-ddTHH:mm:ss)");
+        LocalDateTime newExp = null;
+        if (expStr != null && !expStr.isEmpty()) {
+            try {
+                newExp = LocalDateTime.parse(expStr, DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"));
+            } catch (Exception e) {
+                System.out.println("  Invalid date format.");
+                return;
+            }
+        }
+        String error = manager.updateCard(cardNumber, newHolderId, newOwnerId, newExp);
+        if (error != null) {
+            System.out.println("  Error: " + error);
+        } else {
+            System.out.println("  Card updated successfully.");
         }
     }
 

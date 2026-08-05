@@ -3,6 +3,9 @@ package model;
 import java.time.LocalDateTime;
 
 /**
+ * Represents a physical or digital insurance coverage card issued to a customer.
+ * Each card is linked to a card holder and a policy owner, and tracks an expiration date.
+ *
  * @author Nguyen Khanh Nguyen - s4197203
  */
 public class InsuranceCard {

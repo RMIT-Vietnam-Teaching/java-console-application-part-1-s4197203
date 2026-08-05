@@ -195,6 +195,29 @@ public class ClaimManager {
     }
 
     /**
+     * Updates an existing card's details. Null or empty values retain current data.
+     */
+    public String updateCard(String cardNumber, String newHolderId, String newOwnerId, LocalDateTime newExpDate) {
+        InsuranceCard card = getCardByNumber(cardNumber);
+        if (card == null) return "Card not found.";
+
+        if (newHolderId != null && !newHolderId.isEmpty()) {
+            if (getCustomerById(newHolderId) == null) return "Card holder ID not found.";
+            card.setCardHolderId(newHolderId);
+        }
+        if (newOwnerId != null && !newOwnerId.isEmpty()) {
+            Customer owner = getCustomerById(newOwnerId);
+            if (owner == null) return "Policy owner ID not found.";
+            if (!owner.isPolicyHolder()) return "Policy owner must be a PolicyHolder.";
+            card.setPolicyOwnerId(newOwnerId);
+        }
+        if (newExpDate != null) {
+            card.setExpirationDate(newExpDate);
+        }
+        return null;
+    }
+
+    /**
      * Deletes a card and cascades removal to associated claims.
      *
      * @param cardNumber the card number to delete
