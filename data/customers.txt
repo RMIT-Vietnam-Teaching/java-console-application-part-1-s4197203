@@ -1,0 +1,17 @@
+c-1000001|Nguyen Van An|PolicyHolder|null
+c-1000002|Tran Thi Binh|PolicyHolder|null
+c-1000003|Le Van Cuong|PolicyHolder|null
+c-1000004|Pham Thi Dung|PolicyHolder|null
+c-1000005|Hoang Van Em|PolicyHolder|null
+c-1000006|Vo Thi Phuong|PolicyHolder|null
+c-1000007|Dang Van Giang|PolicyHolder|null
+c-1000008|Bui Thi Huong|PolicyHolder|null
+c-1000009|Do Van Ich|PolicyHolder|null
+c-1000010|Ngo Thi Kieu|PolicyHolder|null
+c-2000001|Nguyen Thi Lan|Dependent|c-1000001
+c-2000002|Tran Van Minh|Dependent|c-1000002
+c-2000003|Le Thi Ngoc|Dependent|c-1000003
+c-2000004|Pham Van Oanh|Dependent|c-1000004
+c-2000005|Hoang Thi Phuc|Dependent|c-1000001
+c-2000006|Vo Van Quang|Dependent|c-1000006
+c-2000007|Dang Thi Rong|Dependent|c-1000007
