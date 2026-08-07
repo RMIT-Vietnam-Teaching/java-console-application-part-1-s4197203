@@ -610,7 +610,7 @@ public class ConsoleUI {
 
     private void printCustomerTable(ArrayList<Customer> list) {
         System.out.printf("  %-12s %-22s %-14s %-12s%n", "ID", "Name", "Type", "Parent PH");
-        System.out.println("  " + "-".repeat(68));
+        System.out.println("  " + repeatChar('-', 68));
         for (Customer c : list) {
             String parent = c.getParentPolicyHolderId() == null ? "N/A" : c.getParentPolicyHolderId();
             System.out.printf("  %-12s %-22s %-14s %-12s%n",
@@ -620,7 +620,7 @@ public class ConsoleUI {
 
     private void printCardTable(ArrayList<InsuranceCard> cards) {
         System.out.printf("  %-12s %-14s %-14s %-20s%n", "Card No.", "Holder", "Owner", "Expires");
-        System.out.println("  " + "-".repeat(65));
+        System.out.println("  " + repeatChar('-', 65));
         for (InsuranceCard c : cards) {
             System.out.printf("  %-12s %-14s %-14s %-20s%n",
                     c.getCardNumber(), c.getCardHolderId(), c.getPolicyOwnerId(),
@@ -631,7 +631,7 @@ public class ConsoleUI {
     private void printClaimTable(ArrayList<Claim> list) {
         System.out.printf("  %-15s %-14s %-12s %-12s %-12s %s%n",
                 "Claim ID", "Insured", "Card", "Amount", "Status", "Docs");
-        System.out.println("  " + "-".repeat(80));
+        System.out.println("  " + repeatChar('-', 80));
         for (Claim c : list) {
             System.out.printf("  %-15s %-14s %-12s $%9.2f  %-12s %d%n",
                     c.getId(), c.getInsuredPersonId(), c.getCardNumber(),
@@ -642,5 +642,13 @@ public class ConsoleUI {
     private String truncate(String s, int maxLen) {
         if (s.length() <= maxLen) return s;
         return s.substring(0, maxLen - 1) + ".";
+    }
+
+    private String repeatChar(char c, int count) {
+        StringBuilder sb = new StringBuilder(count);
+        for (int i = 0; i < count; i++) {
+            sb.append(c);
+        }
+        return sb.toString();
     }
 }
