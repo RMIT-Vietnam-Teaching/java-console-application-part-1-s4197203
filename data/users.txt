@@ -1,0 +1,25 @@
+admin01|admin123|Nguyen Minh Admin|Admin|Active
+admin02|admin456|Tran Thi Boss|Admin|Active
+off01|off123|Le Van Officer|ClaimsOfficer|Active
+off02|off456|Pham Thi Agent|ClaimsOfficer|Active
+off03|off789|Hoang Van处理|ClaimsOfficer|Active
+cust01|pass123|Nguyen Van An|Customer|Active|c-1000001
+cust02|pass456|Tran Thi Binh|Customer|Active|c-1000002
+cust03|pass789|Le Van Cuong|Customer|Active|c-1000003
+cust04|pass101|Pham Thi Dung|Customer|Active|c-1000004
+cust05|pass202|Hoang Van Em|Customer|Active|c-1000005
+cust06|pass303|Vo Thi Phuong|Customer|Active|c-1000006
+cust07|pass404|Dang Van Giang|Customer|Active|c-1000007
+cust08|pass505|Bui Thi Huong|Customer|Active|c-1000008
+cust09|pass606|Do Van Ich|Customer|Active|c-1000009
+cust10|pass707|Ngo Thi Kieu|Customer|Active|c-1000010
+cust11|pass808|Nguyen Thi Lan|Customer|Active|c-2000001
+cust12|pass909|Tran Van Minh|Customer|Active|c-2000002
+cust13|pass010|Le Thi Ngoc|Customer|Active|c-2000003
+cust14|pass020|Pham Van Oanh|Customer|Active|c-2000004
+cust15|pass030|Hoang Thi Phuc|Customer|Active|c-2000005
+cust16|pass040|Vo Van Quang|Customer|Active|c-2000006
+cust17|pass050|Dang Thi Rong|Customer|Active|c-2000007
+cust18|pass060|Bui Van Son|Customer|Inactive|c-1000001
+cust19|pass070|Do Thi Mai|Customer|Active|c-1000002
+cust20|pass080|Ngo Van Dat|Customer|Active|c-1000003

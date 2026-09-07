@@ -13,12 +13,18 @@ public class InsuranceCard {
     private String cardHolderId;
     private String policyOwnerId;
     private LocalDateTime expirationDate;
+    private MembershipTier membershipTier;
 
     public InsuranceCard(String cardNumber, String cardHolderId, String policyOwnerId, LocalDateTime expirationDate) {
+        this(cardNumber, cardHolderId, policyOwnerId, expirationDate, MembershipTier.BASIC);
+    }
+
+    public InsuranceCard(String cardNumber, String cardHolderId, String policyOwnerId, LocalDateTime expirationDate, MembershipTier membershipTier) {
         this.cardNumber = cardNumber;
         this.cardHolderId = cardHolderId;
         this.policyOwnerId = policyOwnerId;
         this.expirationDate = expirationDate;
+        this.membershipTier = membershipTier;
     }
 
     public String getCardNumber() {
@@ -53,6 +59,14 @@ public class InsuranceCard {
         this.expirationDate = expirationDate;
     }
 
+    public MembershipTier getMembershipTier() {
+        return membershipTier;
+    }
+
+    public void setMembershipTier(MembershipTier membershipTier) {
+        this.membershipTier = membershipTier;
+    }
+
     @Override
     public String toString() {
         return "InsuranceCard{" +
@@ -60,6 +74,7 @@ public class InsuranceCard {
                 ", cardHolderId='" + cardHolderId + '\'' +
                 ", policyOwnerId='" + policyOwnerId + '\'' +
                 ", expirationDate=" + expirationDate +
+                ", membershipTier=" + membershipTier.getLabel() +
                 '}';
     }
 }

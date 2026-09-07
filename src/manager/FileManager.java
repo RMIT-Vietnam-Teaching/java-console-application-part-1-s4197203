@@ -1,10 +1,7 @@
 package manager;
 
-import model.Claim;
-import model.ClaimStatus;
-import model.Customer;
-import model.CustomerType;
-import model.InsuranceCard;
+import model.*;
+import service.ActivityLogger;
 
 import java.io.*;
 import java.time.LocalDateTime;
@@ -23,13 +20,8 @@ public class FileManager {
     private static final String DELIMITER = "\\|";
     private static final String PIPE = "|";
 
-    /**
-     * Loads customers from a pipe-delimited text file.
-     * Format: id|fullName|customerType|parentPolicyHolderId
-     *
-     * @param filePath path to the customers data file
-     * @return list of parsed Customer objects
-     */
+    // ==================== CUSTOMERS ====================
+
     public ArrayList<Customer> loadCustomers(String filePath) {
         ArrayList<Customer> customers = new ArrayList<>();
         File file = new File(filePath);
@@ -64,13 +56,20 @@ public class FileManager {
         return customers;
     }
 
-    /**
-     * Loads insurance cards from a pipe-delimited text file.
-     * Format: cardNumber|cardHolderId|policyOwnerId|expirationDate
-     *
-     * @param filePath path to the cards data file
-     * @return list of parsed InsuranceCard objects
-     */
+    public void saveCustomers(String filePath, ArrayList<Customer> customers) {
+        try (PrintWriter writer = new PrintWriter(new FileWriter(filePath))) {
+            for (Customer c : customers) {
+                String parentId = c.getParentPolicyHolderId() == null ? "null" : c.getParentPolicyHolderId();
+                writer.println(c.getId() + PIPE + c.getFullName() + PIPE +
+                        c.getCustomerTypeLabel() + PIPE + parentId);
+            }
+        } catch (IOException e) {
+            System.err.println("Error saving customers to " + filePath + ": " + e.getMessage());
+        }
+    }
+
+    // ==================== INSURANCE CARDS ====================
+
     public ArrayList<InsuranceCard> loadCards(String filePath) {
         ArrayList<InsuranceCard> cards = new ArrayList<>();
         File file = new File(filePath);
@@ -93,7 +92,9 @@ public class FileManager {
                         continue;
                     }
                     LocalDateTime expDate = LocalDateTime.parse(parts[3], DATE_FORMATTER);
-                    cards.add(new InsuranceCard(parts[0], parts[1], parts[2], expDate));
+                    MembershipTier tier = parts.length >= 5 ?
+                            MembershipTier.fromLabel(parts[4]) : MembershipTier.BASIC;
+                    cards.add(new InsuranceCard(parts[0], parts[1], parts[2], expDate, tier));
                 } catch (Exception e) {
                     System.err.println("Skipping invalid card at line " + lineNum + ": " + e.getMessage());
                 }
@@ -104,13 +105,20 @@ public class FileManager {
         return cards;
     }
 
-    /**
-     * Loads claims from a pipe-delimited text file.
-     * Format: id|claimDate|insuredPersonId|cardNumber|examDate|doc1;doc2|amount|status
-     *
-     * @param filePath path to the claims data file
-     * @return list of parsed Claim objects
-     */
+    public void saveCards(String filePath, ArrayList<InsuranceCard> cards) {
+        try (PrintWriter writer = new PrintWriter(new FileWriter(filePath))) {
+            for (InsuranceCard card : cards) {
+                writer.println(card.getCardNumber() + PIPE + card.getCardHolderId() + PIPE +
+                        card.getPolicyOwnerId() + PIPE + card.getExpirationDate().format(DATE_FORMATTER) +
+                        PIPE + card.getMembershipTier().getLabel());
+            }
+        } catch (IOException e) {
+            System.err.println("Error saving cards to " + filePath + ": " + e.getMessage());
+        }
+    }
+
+    // ==================== CLAIMS ====================
+
     public ArrayList<Claim> loadClaims(String filePath) {
         ArrayList<Claim> claims = new ArrayList<>();
         File file = new File(filePath);
@@ -152,38 +160,6 @@ public class FileManager {
         return claims;
     }
 
-    /**
-     * Saves all customers to a pipe-delimited text file.
-     */
-    public void saveCustomers(String filePath, ArrayList<Customer> customers) {
-        try (PrintWriter writer = new PrintWriter(new FileWriter(filePath))) {
-            for (Customer c : customers) {
-                String parentId = c.getParentPolicyHolderId() == null ? "null" : c.getParentPolicyHolderId();
-                writer.println(c.getId() + PIPE + c.getFullName() + PIPE +
-                        c.getCustomerTypeLabel() + PIPE + parentId);
-            }
-        } catch (IOException e) {
-            System.err.println("Error saving customers to " + filePath + ": " + e.getMessage());
-        }
-    }
-
-    /**
-     * Saves all insurance cards to a pipe-delimited text file.
-     */
-    public void saveCards(String filePath, ArrayList<InsuranceCard> cards) {
-        try (PrintWriter writer = new PrintWriter(new FileWriter(filePath))) {
-            for (InsuranceCard card : cards) {
-                writer.println(card.getCardNumber() + PIPE + card.getCardHolderId() + PIPE +
-                        card.getPolicyOwnerId() + PIPE + card.getExpirationDate().format(DATE_FORMATTER));
-            }
-        } catch (IOException e) {
-            System.err.println("Error saving cards to " + filePath + ": " + e.getMessage());
-        }
-    }
-
-    /**
-     * Saves all claims to a pipe-delimited text file.
-     */
     public void saveClaims(String filePath, ArrayList<Claim> claims) {
         try (PrintWriter writer = new PrintWriter(new FileWriter(filePath))) {
             for (Claim claim : claims) {
@@ -197,6 +173,111 @@ public class FileManager {
             System.err.println("Error saving claims to " + filePath + ": " + e.getMessage());
         }
     }
+
+    // ==================== USERS ====================
+
+    public ArrayList<User> loadUsers(String filePath) {
+        ArrayList<User> users = new ArrayList<>();
+        File file = new File(filePath);
+        if (!file.exists()) {
+            createEmptyFile(file);
+            return users;
+        }
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String line;
+            int lineNum = 0;
+            while ((line = reader.readLine()) != null) {
+                lineNum++;
+                line = line.trim();
+                if (line.isEmpty()) continue;
+                try {
+                    String[] parts = line.split(DELIMITER);
+                    if (parts.length < 5) {
+                        System.err.println("Skipping malformed user record at line " + lineNum);
+                        continue;
+                    }
+                    String role = parts[3].trim();
+                    User user = null;
+                    switch (role) {
+                        case "Admin":
+                            user = Admin.fromFileString(line);
+                            break;
+                        case "ClaimsOfficer":
+                            user = ClaimsOfficer.fromFileString(line);
+                            break;
+                        case "Customer":
+                            if (parts.length >= 7) {
+                                user = new PolicyHolder(parts[0].trim(), parts[1].trim(), parts[2].trim(),
+                                        UserStatus.fromLabel(parts[4].trim()), parts[5].trim());
+                            } else if (parts.length >= 6) {
+                                user = new PolicyHolder(parts[0].trim(), parts[1].trim(), parts[2].trim(),
+                                        UserStatus.fromLabel(parts[4].trim()), parts[5].trim());
+                            }
+                            break;
+                        default:
+                            System.err.println("Unknown role '" + role + "' at line " + lineNum);
+                    }
+                    if (user != null) {
+                        users.add(user);
+                    } else {
+                        System.err.println("Skipping invalid user at line " + lineNum);
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error parsing user at line " + lineNum + ": " + e.getMessage());
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Error loading users from " + filePath + ": " + e.getMessage());
+        }
+        return users;
+    }
+
+    public void saveUsers(String filePath, ArrayList<User> users) {
+        try (PrintWriter writer = new PrintWriter(new FileWriter(filePath))) {
+            for (User user : users) {
+                writer.println(user.toFileString());
+            }
+        } catch (IOException e) {
+            System.err.println("Error saving users to " + filePath + ": " + e.getMessage());
+        }
+    }
+
+    // ==================== ACTIVITY LOGS ====================
+
+    public ArrayList<String> loadLogs(String filePath) {
+        ArrayList<String> logs = new ArrayList<>();
+        File file = new File(filePath);
+        if (!file.exists()) {
+            createEmptyFile(file);
+            return logs;
+        }
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                if (!line.isEmpty()) {
+                    logs.add(line);
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Error loading logs from " + filePath + ": " + e.getMessage());
+        }
+        return logs;
+    }
+
+    public void saveLogs(String filePath, ArrayList<String> logs) {
+        try (PrintWriter writer = new PrintWriter(new FileWriter(filePath))) {
+            for (String log : logs) {
+                writer.println(log);
+            }
+        } catch (IOException e) {
+            System.err.println("Error saving logs to " + filePath + ": " + e.getMessage());
+        }
+    }
+
+    // ==================== UTILITY ====================
 
     private void createEmptyFile(File file) {
         try {

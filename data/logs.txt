@@ -1,0 +1,16 @@
+2026-07-10 08:00:00 | admin01 | System initialized
+2026-07-10 08:05:00 | admin01 | Loaded 17 customers from file
+2026-07-10 08:05:00 | admin01 | Loaded 16 cards from file
+2026-07-10 08:05:00 | admin01 | Loaded 15 claims from file
+2026-07-10 09:00:00 | off01 | Login successful
+2026-07-10 09:15:00 | off01 | Viewed claim f-1234567890
+2026-07-10 09:30:00 | off01 | Updated claim f-1234567891 status to Processing
+2026-07-10 10:00:00 | cust01 | Login successful
+2026-07-10 10:10:00 | cust01 | Viewed own claims
+2026-07-10 10:15:00 | cust01 | Viewed own cards
+2026-07-10 11:00:00 | admin01 | Added new customer c-1000011
+2026-07-10 11:30:00 | admin01 | Generated financial report
+2026-07-10 12:00:00 | off02 | Login successful
+2026-07-10 12:30:00 | off02 | Processed claim f-1234567894
+2026-07-10 13:00:00 | cust02 | Login successful
+2026-07-10 13:15:00 | cust02 | Submitted new claim f-1234567910
