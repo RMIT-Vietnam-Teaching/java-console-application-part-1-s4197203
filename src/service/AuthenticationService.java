@@ -13,9 +13,9 @@ public class AuthenticationService {
         this.users = users;
     }
 
-    public User login(String userId, String password) throws AuthenticationException {
+    public User login(String username, String password) throws AuthenticationException {
         for (User user : users) {
-            if (user.getUserId().equals(userId)) {
+            if (user.getUsername().equals(username)) {
                 if (!user.isActive()) {
                     throw new AuthenticationException("Account is inactive. Contact administrator.");
                 }
@@ -23,9 +23,10 @@ public class AuthenticationService {
                     currentUser = user;
                     return user;
                 }
+                throw new AuthenticationException("Invalid username or password.");
             }
         }
-        throw new AuthenticationException("Invalid userId or password.");
+        throw new AuthenticationException("Invalid username or password.");
     }
 
     public void logout() {

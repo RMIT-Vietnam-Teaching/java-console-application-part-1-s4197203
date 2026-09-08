@@ -4,7 +4,8 @@ import java.time.LocalDateTime;
 
 /**
  * Represents a physical or digital insurance coverage card issued to a customer.
- * Each card is linked to a card holder and a policy owner, and tracks an expiration date.
+ * Each card is linked to a card holder and a policy owner.
+ * Membership tier is now derived from the customer's total approved claim spending.
  *
  * @author Nguyen Khanh Nguyen - s4197203
  */
@@ -13,59 +14,25 @@ public class InsuranceCard {
     private String cardHolderId;
     private String policyOwnerId;
     private LocalDateTime expirationDate;
-    private MembershipTier membershipTier;
 
     public InsuranceCard(String cardNumber, String cardHolderId, String policyOwnerId, LocalDateTime expirationDate) {
-        this(cardNumber, cardHolderId, policyOwnerId, expirationDate, MembershipTier.BASIC);
-    }
-
-    public InsuranceCard(String cardNumber, String cardHolderId, String policyOwnerId, LocalDateTime expirationDate, MembershipTier membershipTier) {
         this.cardNumber = cardNumber;
         this.cardHolderId = cardHolderId;
         this.policyOwnerId = policyOwnerId;
         this.expirationDate = expirationDate;
-        this.membershipTier = membershipTier;
     }
 
-    public String getCardNumber() {
-        return cardNumber;
-    }
+    public String getCardNumber() { return cardNumber; }
+    public void setCardNumber(String cardNumber) { this.cardNumber = cardNumber; }
 
-    public void setCardNumber(String cardNumber) {
-        this.cardNumber = cardNumber;
-    }
+    public String getCardHolderId() { return cardHolderId; }
+    public void setCardHolderId(String cardHolderId) { this.cardHolderId = cardHolderId; }
 
-    public String getCardHolderId() {
-        return cardHolderId;
-    }
+    public String getPolicyOwnerId() { return policyOwnerId; }
+    public void setPolicyOwnerId(String policyOwnerId) { this.policyOwnerId = policyOwnerId; }
 
-    public void setCardHolderId(String cardHolderId) {
-        this.cardHolderId = cardHolderId;
-    }
-
-    public String getPolicyOwnerId() {
-        return policyOwnerId;
-    }
-
-    public void setPolicyOwnerId(String policyOwnerId) {
-        this.policyOwnerId = policyOwnerId;
-    }
-
-    public LocalDateTime getExpirationDate() {
-        return expirationDate;
-    }
-
-    public void setExpirationDate(LocalDateTime expirationDate) {
-        this.expirationDate = expirationDate;
-    }
-
-    public MembershipTier getMembershipTier() {
-        return membershipTier;
-    }
-
-    public void setMembershipTier(MembershipTier membershipTier) {
-        this.membershipTier = membershipTier;
-    }
+    public LocalDateTime getExpirationDate() { return expirationDate; }
+    public void setExpirationDate(LocalDateTime expirationDate) { this.expirationDate = expirationDate; }
 
     @Override
     public String toString() {
@@ -74,7 +41,6 @@ public class InsuranceCard {
                 ", cardHolderId='" + cardHolderId + '\'' +
                 ", policyOwnerId='" + policyOwnerId + '\'' +
                 ", expirationDate=" + expirationDate +
-                ", membershipTier=" + membershipTier.getLabel() +
                 '}';
     }
 }

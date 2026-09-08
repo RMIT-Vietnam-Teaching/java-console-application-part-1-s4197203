@@ -17,18 +17,51 @@ import java.util.ArrayList;
  */
 public class Main {
     public static void main(String[] args) {
+        System.out.println("========================================");
+        System.out.println("  COSC3110/3111 HEALTH INSURANCE SYSTEM");
+        System.out.println("                                        ");
+        System.out.println("        Student ID: s4197203            ");
+        System.out.println("                                        ");
+        System.out.println("    Student Name: Nguyen Khanh Nguyen   ");
+        System.out.println("========================================\n");
+
         String dataDir = "data";
         FileManager fileManager = new FileManager();
 
-        System.out.println("========================================");
-        System.out.println("   ClaimShield - Insurance Management");
-        System.out.println("========================================");
         System.out.println("Loading data...");
 
         ArrayList<Customer> customers = fileManager.loadCustomers(dataDir + "/customers.txt");
         ArrayList<InsuranceCard> cards = fileManager.loadCards(dataDir + "/cards.txt");
         ArrayList<Claim> claims = fileManager.loadClaims(dataDir + "/claims.txt");
         ArrayList<User> users = fileManager.loadUsers(dataDir + "/users.txt");
+
+        for (Customer c : customers) {
+            String cardNum = c.getCardNumberForLoading();
+            if (cardNum != null) {
+                for (InsuranceCard card : cards) {
+                    if (card.getCardNumber().equals(cardNum)) {
+                        c.setInsuranceCard(card);
+                        break;
+                    }
+                }
+            }
+        }
+
+        for (User u : users) {
+            if (u instanceof PolicyHolder) {
+                PolicyHolder ph = (PolicyHolder) u;
+                for (Customer c : customers) {
+                    if (c.isDependent() && ph.getCustomerId().equals(c.getParentPolicyHolderId())) {
+                        Dependent dep = new Dependent(
+                            ph.getUserId() + "_dep_" + c.getId(),
+                            c.getId(), "pass", c.getFullName(), "dep@" + c.getId() + ".com",
+                            UserStatus.ACTIVE, c.getId(), c.getParentPolicyHolderId()
+                        );
+                        ph.addDependent(dep);
+                    }
+                }
+            }
+        }
 
         ClaimManager claimManager = new ClaimManager();
         claimManager.setCustomers(customers);

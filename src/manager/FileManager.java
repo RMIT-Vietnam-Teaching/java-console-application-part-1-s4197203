@@ -1,7 +1,6 @@
 package manager;
 
 import model.*;
-import service.ActivityLogger;
 
 import java.io.*;
 import java.time.LocalDateTime;
@@ -12,6 +11,12 @@ import java.util.Arrays;
 /**
  * Handles file I/O operations for loading and saving system data.
  * Uses pipe-delimited text files with ISO-8601 date serialization.
+ *
+ * Updated formats:
+ *   users.txt:    userId|username|password|fullName|email|role|status|customerId[|dependents]
+ *   customers.txt: id|fullName|customerType|parentPolicyHolderId|cardReference|totalApprovedClaimAmount
+ *   cards.txt:    cardNumber|cardHolderId|policyOwnerId|expirationDate
+ *   claims.txt:   id|claimDate|insuredPersonId|cardNumber|examDate|documents|amount|status
  *
  * @author Nguyen Khanh Nguyen - s4197203
  */
@@ -45,8 +50,12 @@ public class FileManager {
                     }
                     String parentId = parts[3].equals("null") ? null : parts[3];
                     CustomerType type = CustomerType.fromLabel(parts[2]);
-                    customers.add(new Customer(parts[0], parts[1], type, parentId));
-                } catch (IllegalArgumentException e) {
+                    String cardNum = parts.length > 4 && !parts[4].equals("null") ? parts[4] : null;
+                    double totalApproved = parts.length > 5 ? Double.parseDouble(parts[5]) : 0.0;
+                    Customer c = new Customer(parts[0], parts[1], type, parentId, null, totalApproved);
+                    c.setCardNumberForLoading(cardNum);
+                    customers.add(c);
+                } catch (Exception e) {
                     System.err.println("Skipping invalid customer at line " + lineNum + ": " + e.getMessage());
                 }
             }
@@ -60,8 +69,10 @@ public class FileManager {
         try (PrintWriter writer = new PrintWriter(new FileWriter(filePath))) {
             for (Customer c : customers) {
                 String parentId = c.getParentPolicyHolderId() == null ? "null" : c.getParentPolicyHolderId();
+                String cardNum = c.getInsuranceCard() != null ? c.getInsuranceCard().getCardNumber() : "null";
                 writer.println(c.getId() + PIPE + c.getFullName() + PIPE +
-                        c.getCustomerTypeLabel() + PIPE + parentId);
+                        c.getCustomerTypeLabel() + PIPE + parentId + PIPE +
+                        cardNum + PIPE + String.format("%.2f", c.getTotalApprovedClaimAmount()));
             }
         } catch (IOException e) {
             System.err.println("Error saving customers to " + filePath + ": " + e.getMessage());
@@ -92,9 +103,7 @@ public class FileManager {
                         continue;
                     }
                     LocalDateTime expDate = LocalDateTime.parse(parts[3], DATE_FORMATTER);
-                    MembershipTier tier = parts.length >= 5 ?
-                            MembershipTier.fromLabel(parts[4]) : MembershipTier.BASIC;
-                    cards.add(new InsuranceCard(parts[0], parts[1], parts[2], expDate, tier));
+                    cards.add(new InsuranceCard(parts[0], parts[1], parts[2], expDate));
                 } catch (Exception e) {
                     System.err.println("Skipping invalid card at line " + lineNum + ": " + e.getMessage());
                 }
@@ -109,8 +118,7 @@ public class FileManager {
         try (PrintWriter writer = new PrintWriter(new FileWriter(filePath))) {
             for (InsuranceCard card : cards) {
                 writer.println(card.getCardNumber() + PIPE + card.getCardHolderId() + PIPE +
-                        card.getPolicyOwnerId() + PIPE + card.getExpirationDate().format(DATE_FORMATTER) +
-                        PIPE + card.getMembershipTier().getLabel());
+                        card.getPolicyOwnerId() + PIPE + card.getExpirationDate().format(DATE_FORMATTER));
             }
         } catch (IOException e) {
             System.err.println("Error saving cards to " + filePath + ": " + e.getMessage());
@@ -149,6 +157,9 @@ public class FileManager {
                         String[] docs = parts[5].split(";");
                         claim.getDocuments().addAll(Arrays.asList(docs));
                     }
+                    if (parts.length > 8 && !parts[8].trim().isEmpty() && !parts[8].trim().equals("null")) {
+                        claim.setProcessedBy(parts[8].trim());
+                    }
                     claims.add(claim);
                 } catch (Exception e) {
                     System.err.println("Skipping invalid claim at line " + lineNum + ": " + e.getMessage());
@@ -164,10 +175,11 @@ public class FileManager {
         try (PrintWriter writer = new PrintWriter(new FileWriter(filePath))) {
             for (Claim claim : claims) {
                 String docs = claim.getDocuments().isEmpty() ? "null" : String.join(";", claim.getDocuments());
+                String processedBy = claim.getProcessedBy() == null ? "null" : claim.getProcessedBy();
                 writer.println(claim.getId() + PIPE + claim.getClaimDate().format(DATE_FORMATTER) + PIPE +
                         claim.getInsuredPersonId() + PIPE + claim.getCardNumber() + PIPE +
                         claim.getExamDate().format(DATE_FORMATTER) + PIPE + docs + PIPE +
-                        claim.getClaimAmount() + PIPE + claim.getStatusLabel());
+                        claim.getClaimAmount() + PIPE + claim.getStatusLabel() + PIPE + processedBy);
             }
         } catch (IOException e) {
             System.err.println("Error saving claims to " + filePath + ": " + e.getMessage());
@@ -193,11 +205,11 @@ public class FileManager {
                 if (line.isEmpty()) continue;
                 try {
                     String[] parts = line.split(DELIMITER);
-                    if (parts.length < 5) {
+                    if (parts.length < 7) {
                         System.err.println("Skipping malformed user record at line " + lineNum);
                         continue;
                     }
-                    String role = parts[3].trim();
+                    String role = parts[5].trim();
                     User user = null;
                     switch (role) {
                         case "Admin":
@@ -207,13 +219,10 @@ public class FileManager {
                             user = ClaimsOfficer.fromFileString(line);
                             break;
                         case "Customer":
-                            if (parts.length >= 7) {
-                                user = new PolicyHolder(parts[0].trim(), parts[1].trim(), parts[2].trim(),
-                                        UserStatus.fromLabel(parts[4].trim()), parts[5].trim());
-                            } else if (parts.length >= 6) {
-                                user = new PolicyHolder(parts[0].trim(), parts[1].trim(), parts[2].trim(),
-                                        UserStatus.fromLabel(parts[4].trim()), parts[5].trim());
-                            }
+                            String customerId = parts.length > 7 ? parts[7].trim() : null;
+                            user = new PolicyHolder(parts[0].trim(), parts[1].trim(), parts[2].trim(),
+                                    parts[3].trim(), parts[4].trim(),
+                                    UserStatus.fromLabel(parts[6].trim()), customerId);
                             break;
                         default:
                             System.err.println("Unknown role '" + role + "' at line " + lineNum);

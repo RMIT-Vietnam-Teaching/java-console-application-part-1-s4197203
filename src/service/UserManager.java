@@ -36,7 +36,10 @@ public class UserManager implements UserManageable {
 
     @Override
     public void deleteUser(String userId) {
-        users.removeIf(u -> u.getUserId().equals(userId));
+        User user = getUserById(userId);
+        if (user != null) {
+            user.setStatus(UserStatus.INACTIVE);
+        }
     }
 
     @Override

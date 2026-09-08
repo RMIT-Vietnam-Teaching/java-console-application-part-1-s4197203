@@ -1,6 +1,7 @@
 package ui;
 
 import exceptions.AuthenticationException;
+import exceptions.InvalidStatusTransitionException;
 import manager.ClaimManager;
 import manager.FileManager;
 import model.*;
@@ -49,6 +50,7 @@ public class ConsoleUI {
         while (true) {
             User loggedUser = loginScreen();
             if (loggedUser == null) return;
+            loggedUser.displayDashboard();
             switch (loggedUser.getRole()) {
                 case ADMIN:
                     adminMenu(loggedUser);
@@ -67,27 +69,28 @@ public class ConsoleUI {
     // ==================== LOGIN ====================
 
     private User loginScreen() {
-        System.out.println("\n========================================");
-        System.out.println("        ClaimShield - Login");
-        System.out.println("========================================");
-        System.out.println("  1. Login");
-        System.out.println("  2. Exit");
-        int choice = input.promptInt("Choose: ", 1, 2);
-        if (choice == 2) {
-            System.out.println("Goodbye!");
-            return null;
-        }
-        String userId = input.promptString("User ID: ");
-        String password = input.promptString("Password: ");
-        try {
-            User user = authService.login(userId, password);
-            logger.log(userId, "Login successful");
-            System.out.println("\n  Welcome, " + user.getFullName() + " (" + user.getRole().getLabel() + ")");
-            return user;
-        } catch (AuthenticationException e) {
-            System.out.println("  Login failed: " + e.getMessage());
-            logger.log(userId, "Login failed: " + e.getMessage());
-            return loginScreen();
+        while (true) {
+            System.out.println("\n========================================");
+            System.out.println("        ClaimShield - Login");
+            System.out.println("========================================");
+            System.out.println("  1. Login");
+            System.out.println("  2. Exit");
+            int choice = input.promptInt("Choose: ", 1, 2);
+            if (choice == 2) {
+                System.out.println("Goodbye!");
+                return null;
+            }
+            String username = input.promptString("Username: ");
+            String password = input.promptString("Password: ");
+            try {
+                User user = authService.login(username, password);
+                logger.log(user.getUserId(), "Login successful", user.getUserId());
+                System.out.println("\n  Welcome, " + user.getFullName() + " (" + user.getRole().getLabel() + ")");
+                return user;
+            } catch (AuthenticationException e) {
+                System.out.println("  Login failed: " + e.getMessage());
+                logger.log(username, "Login failed", username);
+            }
         }
     }
 
@@ -176,18 +179,20 @@ public class ConsoleUI {
             System.out.println("  1. View My Profile");
             System.out.println("  2. View My Cards");
             System.out.println("  3. View My Claims");
-            System.out.println("  4. Submit New Claim");
-            System.out.println("  5. View Claim Detail");
-            System.out.println("  6. Save and Logout");
+            System.out.println("  4. View My Membership Tier");
+            System.out.println("  5. Submit New Claim");
+            System.out.println("  6. View Claim Detail");
+            System.out.println("  7. Save and Logout");
             System.out.println("========================================");
-            int choice = input.promptInt("Choose: ", 1, 6);
+            int choice = input.promptInt("Choose: ", 1, 7);
             switch (choice) {
                 case 1: viewMyProfile(customerId); break;
                 case 2: viewMyCards(customerId); break;
                 case 3: viewMyClaims(customerId); break;
-                case 4: submitMyClaim(customerId); break;
-                case 5: viewClaimDetail(); break;
-                case 6: saveAndLogout(customer); return;
+                case 4: viewMyTier(customerId); break;
+                case 5: submitMyClaim(customerId); break;
+                case 6: viewClaimDetail(); break;
+                case 7: saveAndLogout(customer); return;
             }
         }
     }
@@ -216,15 +221,16 @@ public class ConsoleUI {
     private void viewAllUsers() {
         ArrayList<User> users = userManager.getUsers();
         System.out.println("\n--- All Users (" + users.size() + ") ---");
-        System.out.printf("  %-10s %-12s %-22s %-16s %-10s%n", "ID", "Role", "Name", "Status", "Linked");
-        System.out.println("  " + repeatChar('-', 75));
+        System.out.printf("  %-10s %-12s %-14s %-22s %-24s %-14s %-10s%n",
+                "ID", "Username", "Role", "Name", "Email", "Status", "Linked");
+        System.out.println("  " + repeatChar('-', 110));
         for (User u : users) {
             String linked = "";
             if (u instanceof PolicyHolder) linked = ((PolicyHolder) u).getCustomerId();
             else if (u instanceof Dependent) linked = ((Dependent) u).getCustomerId();
-            System.out.printf("  %-10s %-12s %-22s %-10s %-16s%n",
-                    u.getUserId(), u.getRole().getLabel(), truncate(u.getFullName(), 21),
-                    u.getStatus().getLabel(), linked);
+            System.out.printf("  %-10s %-12s %-14s %-22s %-24s %-14s %-10s%n",
+                    u.getUserId(), u.getUsername(), u.getRole().getLabel(),
+                    truncate(u.getFullName(), 21), u.getEmail(), u.getStatus().getLabel(), linked);
         }
     }
 
@@ -235,28 +241,34 @@ public class ConsoleUI {
             System.out.println("  Error: User ID already exists.");
             return;
         }
+        String username = input.promptString("Username: ");
         String password = input.promptString("Password: ");
         String fullName = input.promptString("Full Name: ");
+        String email = input.promptString("Email: ");
         System.out.println("  Role: 1 = Admin, 2 = ClaimsOfficer, 3 = Customer");
         int roleChoice = input.promptInt("Choose role: ", 1, 3);
         User user = null;
         switch (roleChoice) {
             case 1:
-                user = new Admin(userId, password, fullName, UserStatus.ACTIVE);
+                user = new Admin(userId, username, password, fullName, email, UserStatus.ACTIVE);
                 break;
             case 2:
-                user = new ClaimsOfficer(userId, password, fullName, UserStatus.ACTIVE);
+                user = new ClaimsOfficer(userId, username, password, fullName, email, UserStatus.ACTIVE);
                 break;
             case 3:
                 String custId = input.promptString("Linked Customer ID: ");
-                user = new PolicyHolder(userId, password, fullName, UserStatus.ACTIVE, custId);
+                user = new PolicyHolder(userId, username, password, fullName, email, UserStatus.ACTIVE, custId);
                 break;
+        }
+        if (user == null) {
+            System.out.println("  Error: Invalid role selection.");
+            return;
         }
         String error = userManager.addUser(user);
         if (error != null) {
             System.out.println("  Error: " + error);
         } else {
-            logger.log(authService.getCurrentUser().getUserId(), "Added user " + userId);
+            logger.log(authService.getCurrentUser().getUserId(), "Added user", userId);
             System.out.println("  User added successfully.");
         }
     }
@@ -277,7 +289,7 @@ public class ConsoleUI {
         if (error != null) {
             System.out.println("  Error: " + error);
         } else {
-            logger.log(authService.getCurrentUser().getUserId(), "Updated user " + userId);
+            logger.log(authService.getCurrentUser().getUserId(), "Updated user", userId);
             System.out.println("  User updated.");
         }
     }
@@ -295,7 +307,7 @@ public class ConsoleUI {
             return;
         }
         userManager.deleteUser(userId);
-        logger.log(authService.getCurrentUser().getUserId(), "Deleted user " + userId);
+        logger.log(authService.getCurrentUser().getUserId(), "Deleted user", userId);
         System.out.println("  User deleted.");
     }
 
@@ -340,7 +352,7 @@ public class ConsoleUI {
         String error = claimManager.addCustomer(new Customer(id, fullName, typeLabel, parentId));
         if (error != null) System.out.println("  Error: " + error);
         else {
-            logger.log(authService.getCurrentUser().getUserId(), "Added customer " + id);
+            logger.log(authService.getCurrentUser().getUserId(), "Added customer", id);
             System.out.println("  Customer added.");
         }
     }
@@ -358,7 +370,7 @@ public class ConsoleUI {
         String error = claimManager.updateCustomer(id, name, type, parent);
         if (error != null) System.out.println("  Error: " + error);
         else {
-            logger.log(authService.getCurrentUser().getUserId(), "Updated customer " + id);
+            logger.log(authService.getCurrentUser().getUserId(), "Updated customer", id);
             System.out.println("  Updated.");
         }
     }
@@ -372,7 +384,7 @@ public class ConsoleUI {
             System.out.println("  Cancelled."); return;
         }
         claimManager.deleteCustomer(id);
-        logger.log(authService.getCurrentUser().getUserId(), "Deleted customer " + id);
+        logger.log(authService.getCurrentUser().getUserId(), "Deleted customer", id);
         System.out.println("  Deleted.");
     }
 
@@ -416,14 +428,11 @@ public class ConsoleUI {
         String holderId = input.promptString("Holder ID: ");
         String ownerId = input.promptString("Owner ID: ");
         LocalDateTime expDate = input.promptDateTime("Expiration Date");
-        System.out.println("  Tier: 1=BASIC, 2=SILVER, 3=GOLD, 4=PLATINUM");
-        int tierChoice = input.promptInt("Choose tier: ", 1, 4);
-        MembershipTier tier = MembershipTier.values()[tierChoice - 1];
-        InsuranceCard card = new InsuranceCard(cardNumber, holderId, ownerId, expDate, tier);
+        InsuranceCard card = new InsuranceCard(cardNumber, holderId, ownerId, expDate);
         String error = claimManager.addCard(card);
         if (error != null) System.out.println("  Error: " + error);
         else {
-            logger.log(authService.getCurrentUser().getUserId(), "Added card " + cardNumber);
+            logger.log(authService.getCurrentUser().getUserId(), "Added card", cardNumber);
             System.out.println("  Card added.");
         }
     }
@@ -446,7 +455,7 @@ public class ConsoleUI {
         String error = claimManager.updateCard(cardNumber, holder, owner, exp);
         if (error != null) System.out.println("  Error: " + error);
         else {
-            logger.log(authService.getCurrentUser().getUserId(), "Updated card " + cardNumber);
+            logger.log(authService.getCurrentUser().getUserId(), "Updated card", cardNumber);
             System.out.println("  Updated.");
         }
     }
@@ -458,7 +467,7 @@ public class ConsoleUI {
         if (card == null) { System.out.println("  Not found."); return; }
         if (!input.confirm("Delete card " + cardNumber + "?")) { System.out.println("  Cancelled."); return; }
         claimManager.deleteCard(cardNumber);
-        logger.log(authService.getCurrentUser().getUserId(), "Deleted card " + cardNumber);
+        logger.log(authService.getCurrentUser().getUserId(), "Deleted card", cardNumber);
         System.out.println("  Deleted.");
     }
 
@@ -516,7 +525,7 @@ public class ConsoleUI {
         String error = claimManager.addClaim(claim);
         if (error != null) System.out.println("  Error: " + error);
         else {
-            logger.log(authService.getCurrentUser().getUserId(), "Added claim " + id);
+            logger.log(authService.getCurrentUser().getUserId(), "Added claim", id);
             System.out.println("  Claim added.");
         }
     }
@@ -530,13 +539,19 @@ public class ConsoleUI {
         if (claim.getStatus() == ClaimStatus.DONE) {
             System.out.println("  Already Done."); return;
         }
-        System.out.println("  Next: " + claim.getNextStatus().getLabel());
+        ClaimStatus nextStatus = claim.getNextStatus();
+        System.out.println("  Next: " + nextStatus.getLabel());
         if (!input.confirm("Update?")) { System.out.println("  Cancelled."); return; }
-        String error = claimManager.updateClaimStatus(id, claim.getNextStatus().getLabel());
-        if (error != null) System.out.println("  Error: " + error);
-        else {
-            logger.log(authService.getCurrentUser().getUserId(), "Updated claim " + id + " to " + claim.getStatusLabel());
-            System.out.println("  Updated.");
+        try {
+            String error = claimManager.updateClaimStatus(id, nextStatus.getLabel(), authService.getCurrentUser().getUserId());
+            if (error != null) System.out.println("  Error: " + error);
+            else {
+                logger.log(authService.getCurrentUser().getUserId(), "Updated claim status", id);
+                System.out.println("  Updated.");
+            }
+        } catch (InvalidStatusTransitionException e) {
+            System.out.println("  Error: " + e.getMessage());
+            logger.log(authService.getCurrentUser().getUserId(), "Invalid status transition attempt", id);
         }
     }
 
@@ -550,7 +565,7 @@ public class ConsoleUI {
         String error = claimManager.addDocumentToClaim(claimId, docName);
         if (error != null) System.out.println("  Error: " + error);
         else {
-            logger.log(authService.getCurrentUser().getUserId(), "Added doc to claim " + claimId);
+            logger.log(authService.getCurrentUser().getUserId(), "Added document", claimId);
             System.out.println("  Document added.");
         }
     }
@@ -574,16 +589,16 @@ public class ConsoleUI {
         System.out.printf("  Card Number:     %s%n", claim.getCardNumber());
         if (card != null) {
             System.out.printf("  Card Expires:    %s%n", card.getExpirationDate().format(DATE_FMT));
-            System.out.printf("  Tier:            %s (Coverage: %d%%)%n",
-                    card.getMembershipTier().getLabel(),
-                    (int)(card.getMembershipTier().getCoverageRate() * 100));
         }
         System.out.printf("  Claim Amount:    $%,.2f%n", claim.getClaimAmount());
-        if (card != null) {
+        if (insured != null) {
+            MembershipTier tier = insured.getMembershipTier();
             double coPay = claimManager.calculateCoPay(claim);
-            double covered = claimManager.calculateCoverageAmount(claim);
-            System.out.printf("  Coverage (%%):    $%,.2f%n", covered);
-            System.out.printf("  Co-Pay:          $%,.2f%n", coPay);
+            double payout = claimManager.calculateInsurancePayout(claim);
+            System.out.printf("  Customer Tier:   %s (co-pay rate: %.1f%%)%n",
+                    tier.getLabel(), tier.getEffectiveCoPayRate() * 100);
+            System.out.printf("  Insurance Payout:$%,.2f%n", payout);
+            System.out.printf("  Customer Co-Pay: $%,.2f%n", coPay);
         }
         System.out.printf("  Documents:       %d%n", claim.getDocuments().size());
         for (int i = 0; i < claim.getDocuments().size(); i++) {
@@ -597,16 +612,17 @@ public class ConsoleUI {
         String id = input.promptString("Claim ID: ");
         Claim claim = claimManager.getClaimById(id);
         if (claim == null) { System.out.println("  Not found."); return; }
-        InsuranceCard card = claimManager.getCardByNumber(claim.getCardNumber());
-        if (card == null) { System.out.println("  Card not found."); return; }
+        Customer customer = claimManager.getCustomerById(claim.getInsuredPersonId());
+        if (customer == null) { System.out.println("  Customer not found."); return; }
+        MembershipTier tier = customer.getMembershipTier();
         double coPay = claimManager.calculateCoPay(claim);
-        double covered = claimManager.calculateCoverageAmount(claim);
-        System.out.printf("  Claim Amount:    $%,.2f%n", claim.getClaimAmount());
-        System.out.printf("  Tier:            %s (%d%% coverage)%n",
-                card.getMembershipTier().getLabel(),
-                (int)(card.getMembershipTier().getCoverageRate() * 100));
-        System.out.printf("  Insurance Pays:  $%,.2f%n", covered);
-        System.out.printf("  Customer Co-Pay: $%,.2f%n", coPay);
+        double payout = claimManager.calculateInsurancePayout(claim);
+        System.out.printf("  Claim Amount:      $%,.2f%n", claim.getClaimAmount());
+        System.out.printf("  Customer Tier:     %s%n", tier.getLabel());
+        System.out.printf("  Effective Co-Pay:  %.1f%%%n", tier.getEffectiveCoPayRate() * 100);
+        System.out.printf("  Tier Discount:     %.0f%%%n", tier.getTierDiscount() * 100);
+        System.out.printf("  Insurance Payout:  $%,.2f%n", payout);
+        System.out.printf("  Customer Co-Pay:   $%,.2f%n", coPay);
     }
 
     private void deleteClaim() {
@@ -616,7 +632,7 @@ public class ConsoleUI {
         if (claim == null) { System.out.println("  Not found."); return; }
         if (!input.confirm("Delete claim " + id + "?")) { System.out.println("  Cancelled."); return; }
         claimManager.deleteClaim(id);
-        logger.log(authService.getCurrentUser().getUserId(), "Deleted claim " + id);
+        logger.log(authService.getCurrentUser().getUserId(), "Deleted claim", id);
         System.out.println("  Deleted.");
     }
 
@@ -629,9 +645,18 @@ public class ConsoleUI {
     }
 
     private void financialReport() {
+        System.out.println("\n  1. Full Financial Report");
+        System.out.println("  2. Financial Report by Date Range");
+        int c = input.promptInt("Choose: ", 1, 2);
         ReportService report = new ReportService(
                 claimManager.getCustomers(), claimManager.getCards(), claimManager.getClaims());
-        System.out.println(report.generateFinancialReport());
+        if (c == 1) {
+            System.out.println(report.generateFinancialReport());
+        } else {
+            LocalDateTime start = input.promptDateTime("Start Date");
+            LocalDateTime end = input.promptDateTime("End Date");
+            System.out.println(report.generateFinancialReportByDateRange(start, end));
+        }
         System.out.println("\nPress Enter to continue...");
         scanner.nextLine();
     }
@@ -674,8 +699,10 @@ public class ConsoleUI {
             System.out.println("  4. Filter Claims by Status");
             System.out.println("  5. View Claims for Customer");
             System.out.println("  6. View Cards for Customer");
-            System.out.println("  7. Back");
-            int choice = input.promptInt("Choose: ", 1, 7);
+            System.out.println("  7. Filter Claims by Date Range");
+            System.out.println("  8. View Claims by PolicyHolder Family");
+            System.out.println("  9. Back");
+            int choice = input.promptInt("Choose: ", 1, 9);
             switch (choice) {
                 case 1: searchCustomersByName(); break;
                 case 2: filterCustomersByType(); break;
@@ -683,7 +710,9 @@ public class ConsoleUI {
                 case 4: filterClaimsByStatus(); break;
                 case 5: viewClaimsForCustomer(); break;
                 case 6: viewCardsForCustomer(); break;
-                case 7: return;
+                case 7: filterClaimsByDateRange(); break;
+                case 8: viewClaimsByFamily(); break;
+                case 9: return;
             }
         }
     }
@@ -735,6 +764,26 @@ public class ConsoleUI {
         printCardTable(claimManager.getCardsByCustomerId(id));
     }
 
+    private void filterClaimsByDateRange() {
+        LocalDateTime start = input.promptDateTime("Start Date");
+        LocalDateTime end = input.promptDateTime("End Date");
+        ArrayList<Claim> results = claimManager.getClaimsByDateRange(start, end);
+        System.out.println("\n--- Claims in Date Range (" + results.size() + ") ---");
+        printClaimTable(results);
+    }
+
+    private void viewClaimsByFamily() {
+        String phId = input.promptString("PolicyHolder Customer ID: ");
+        Customer ph = claimManager.getCustomerById(phId);
+        if (ph == null || !ph.isPolicyHolder()) {
+            System.out.println("  Not a valid PolicyHolder ID.");
+            return;
+        }
+        ArrayList<Claim> results = claimManager.getClaimsByPolicyHolderFamily(phId);
+        System.out.println("\n--- Claims for Family Group (" + results.size() + ") ---");
+        printClaimTable(results);
+    }
+
     // ==================== CUSTOMER SELF-SERVICE ====================
 
     private void viewMyProfile(String customerId) {
@@ -755,6 +804,27 @@ public class ConsoleUI {
         printClaimTable(claims);
     }
 
+    private void viewMyTier(String customerId) {
+        Customer c = claimManager.getCustomerById(customerId);
+        if (c == null) { System.out.println("  Customer not found."); return; }
+        MembershipTier tier = c.getMembershipTier();
+        System.out.println("\n=============================================");
+        System.out.println("  Membership Tier Status");
+        System.out.println("=============================================");
+        System.out.printf("  Customer:               %s (%s)%n", c.getFullName(), c.getId());
+        System.out.printf("  Total Approved Claims:  $%,.2f%n", c.getTotalApprovedClaimAmount());
+        System.out.printf("  Current Tier:           %s%n", tier.getLabel());
+        System.out.printf("  Tier Discount:          %.0f%%%n", tier.getTierDiscount() * 100);
+        System.out.printf("  Effective Co-Pay Rate:  %.1f%%%n", tier.getEffectiveCoPayRate() * 100);
+        System.out.println("=============================================");
+        System.out.println("  Tier Thresholds:");
+        System.out.println("    Standard:  $0 - $1,999    (30% co-pay)");
+        System.out.println("    Silver:    $2,000 - $4,999 (28.5% co-pay)");
+        System.out.println("    Gold:      $5,000 - $9,999 (27% co-pay)");
+        System.out.println("    Platinum:  $10,000+        (25.5% co-pay)");
+        System.out.println("=============================================");
+    }
+
     private void submitMyClaim(String customerId) {
         System.out.println("\n--- Submit New Claim ---");
         String id = input.promptClaimId("Claim ID");
@@ -768,7 +838,7 @@ public class ConsoleUI {
         String error = claimManager.addClaim(claim);
         if (error != null) System.out.println("  Error: " + error);
         else {
-            logger.log(customerId, "Submitted claim " + id);
+            logger.log(authService.getCurrentUser().getUserId(), "Submitted claim", id);
             System.out.println("  Claim submitted.");
         }
     }
@@ -781,29 +851,32 @@ public class ConsoleUI {
         fileManager.saveCards(dataDir + "/cards.txt", claimManager.getCards());
         fileManager.saveClaims(dataDir + "/claims.txt", claimManager.getClaims());
         fileManager.saveUsers(dataDir + "/users.txt", userManager.getUsers());
-        logger.log(user.getUserId(), "Logout");
+        logger.log(user.getUserId(), "Logout", user.getUserId());
         System.out.println("  Data saved. Goodbye!");
     }
 
     // ==================== DISPLAY HELPERS ====================
 
     private void printCustomerTable(ArrayList<Customer> list) {
-        System.out.printf("  %-12s %-22s %-14s %-12s%n", "ID", "Name", "Type", "Parent PH");
-        System.out.println("  " + repeatChar('-', 68));
+        System.out.printf("  %-12s %-22s %-14s %-12s %-12s %-12s%n",
+                "ID", "Name", "Type", "Parent PH", "Card", "Tier");
+        System.out.println("  " + repeatChar('-', 88));
         for (Customer c : list) {
             String parent = c.getParentPolicyHolderId() == null ? "N/A" : c.getParentPolicyHolderId();
-            System.out.printf("  %-12s %-22s %-14s %-12s%n",
-                    c.getId(), truncate(c.getFullName(), 21), c.getCustomerTypeLabel(), parent);
+            String card = c.getInsuranceCard() != null ? c.getInsuranceCard().getCardNumber() : "N/A";
+            System.out.printf("  %-12s %-22s %-14s %-12s %-12s %-12s%n",
+                    c.getId(), truncate(c.getFullName(), 21), c.getCustomerTypeLabel(),
+                    parent, card, c.getMembershipTier().getLabel());
         }
     }
 
     private void printCardTable(ArrayList<InsuranceCard> cards) {
-        System.out.printf("  %-12s %-14s %-14s %-20s %-10s%n", "Card No.", "Holder", "Owner", "Expires", "Tier");
-        System.out.println("  " + repeatChar('-', 75));
+        System.out.printf("  %-12s %-14s %-14s %-20s%n", "Card No.", "Holder", "Owner", "Expires");
+        System.out.println("  " + repeatChar('-', 65));
         for (InsuranceCard c : cards) {
-            System.out.printf("  %-12s %-14s %-14s %-20s %-10s%n",
+            System.out.printf("  %-12s %-14s %-14s %-20s%n",
                     c.getCardNumber(), c.getCardHolderId(), c.getPolicyOwnerId(),
-                    c.getExpirationDate().format(DATE_FMT), c.getMembershipTier().getLabel());
+                    c.getExpirationDate().format(DATE_FMT));
         }
     }
 
@@ -822,25 +895,29 @@ public class ConsoleUI {
         System.out.println("\n=============================================");
         System.out.println("  Customer Detail");
         System.out.println("=============================================");
-        System.out.printf("  ID:          %s%n", c.getId());
-        System.out.printf("  Name:        %s%n", c.getFullName());
-        System.out.printf("  Type:        %s%n", c.getCustomerTypeLabel());
-        System.out.printf("  Parent PH:   %s%n", c.getParentPolicyHolderId() == null ? "N/A" : c.getParentPolicyHolderId());
+        System.out.printf("  ID:              %s%n", c.getId());
+        System.out.printf("  Name:            %s%n", c.getFullName());
+        System.out.printf("  Type:            %s%n", c.getCustomerTypeLabel());
+        System.out.printf("  Parent PH:       %s%n", c.getParentPolicyHolderId() == null ? "N/A" : c.getParentPolicyHolderId());
+        System.out.printf("  Card Reference:  %s%n", c.getInsuranceCard() != null ? c.getInsuranceCard().getCardNumber() : "N/A");
+        System.out.printf("  Total Approved:  $%,.2f%n", c.getTotalApprovedClaimAmount());
+        System.out.printf("  Membership Tier: %s (co-pay: %.1f%%)%n",
+                c.getMembershipTier().getLabel(), c.getMembershipTier().getEffectiveCoPayRate() * 100);
         if (c.isPolicyHolder()) {
             ArrayList<Customer> deps = claimManager.getDependentsOf(c.getId());
-            System.out.printf("  Dependents:  %d%n", deps.size());
+            System.out.printf("  Dependents:      %d%n", deps.size());
             for (Customer dep : deps) {
                 System.out.printf("    - %s (%s)%n", dep.getFullName(), dep.getId());
             }
         }
         ArrayList<InsuranceCard> cards = claimManager.getCardsByCustomerId(c.getId());
-        System.out.printf("  Cards:       %d%n", cards.size());
+        System.out.printf("  Cards:           %d%n", cards.size());
         for (InsuranceCard card : cards) {
-            System.out.printf("    - %s | Tier: %s | Expires: %s%n", card.getCardNumber(),
-                    card.getMembershipTier().getLabel(), card.getExpirationDate().format(DATE_FMT));
+            System.out.printf("    - %s | Expires: %s%n", card.getCardNumber(),
+                    card.getExpirationDate().format(DATE_FMT));
         }
         ArrayList<Claim> claims = claimManager.getClaimsByCustomerId(c.getId());
-        System.out.printf("  Claims:      %d%n", claims.size());
+        System.out.printf("  Claims:          %d%n", claims.size());
         for (Claim claim : claims) {
             System.out.printf("    - %s | $%,.2f | %s%n", claim.getId(),
                     claim.getClaimAmount(), claim.getStatusLabel());

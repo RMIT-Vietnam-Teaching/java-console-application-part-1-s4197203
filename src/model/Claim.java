@@ -21,6 +21,7 @@ public class Claim {
     private List<String> documents;
     private double claimAmount;
     private ClaimStatus status;
+    private String processedBy;
 
     /**
      * Constructs a Claim using the ClaimStatus enum.
@@ -113,6 +114,9 @@ public class Claim {
     public void setStatus(ClaimStatus status) {
         this.status = status;
     }
+
+    public String getProcessedBy() { return processedBy; }
+    public void setProcessedBy(String processedBy) { this.processedBy = processedBy; }
 
     public void setStatusFromLabel(String label) {
         this.status = ClaimStatus.fromLabel(label);

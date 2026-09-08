@@ -13,8 +13,8 @@ public class ActivityLogger {
         this.logFilePath = logFilePath;
     }
 
-    public void log(String userId, String action) {
-        String entry = String.format("%s | %s | %s", LocalDateTime.now().format(FMT), userId, action);
+    public void log(String userId, String action, String targetEntityId) {
+        String entry = String.format("%s | %s | %s | %s", LocalDateTime.now().format(FMT), userId, action, targetEntityId);
         try (PrintWriter pw = new PrintWriter(new FileWriter(logFilePath, true))) {
             pw.println(entry);
         } catch (IOException e) {
