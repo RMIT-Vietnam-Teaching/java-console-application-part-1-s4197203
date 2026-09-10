@@ -70,7 +70,7 @@ All system data is stored in pipe-delimited text files under the `data/` directo
 
 Dates are serialized in ISO-8601 format (e.g., `2026-07-10T14:30:00`).
 
-**Sample Data:** 21 users, 20 customers, 23 cards, 31 claims pre-loaded.
+**Sample Data:** 26 users, 20 customers, 23 cards, 41 claims pre-loaded.
 
 **Saving:** Use the **Save and Logout** option to persist all changes.
 
@@ -97,10 +97,10 @@ c-2000001|Nguyen Thi Lan|Dependent|c-1000001|1000000002|0.00
 1000000001|c-1000001|c-1000001|2027-12-31T23:59:59
 ```
 
-**claims.txt** `id|claimDate|insuredPersonId|cardNumber|examDate|documents|amount|status`
+**claims.txt** `id|claimDate|insuredPersonId|cardNumber|examDate|documents|amount|status|processedBy`
 
 ```
-f-1234567890|2026-06-15T10:30:00|c-1000001|1000000001|2026-06-14T09:00:00|doc1.pdf;doc2.pdf|1500.0|Done
+f-1234567890|2026-06-15T10:30:00|c-1000001|1000000001|2026-06-14T09:00:00|doc1.pdf;doc2.pdf|1500.00|Done|off01
 ```
 
 ## 5. Key Features and Business Rules
@@ -147,7 +147,7 @@ Tier is recalculated dynamically when viewing customer details or generating rep
 ### Reports (Admin only)
 - **Financial Report:** Total claims, amounts by status, tier breakdown with co-pay and payout totals
 - **Financial Report by Date Range:** Filtered approved claims with co-pay and payout totals within a specific timeframe
-- **Officer Performance Report:** All claims officers with their status and email
+- **Officer Performance Report:** Claims processed per officer with co-pay collected and payout disbursed
 - **Membership Tier Summary:** Policy holders per tier with coverage rates, total claims, co-pay, and payout breakdowns
 
 ### Search & Filter
@@ -191,10 +191,10 @@ Every add, update, and delete action must append an audit entry recording timest
 
 | Entity | Count |
 |--------|-------|
-| Users | 21 (2 Admin, 3 ClaimsOfficer, 16 Customer) |
+| Users | 26 (2 Admin, 3 ClaimsOfficer, 21 Customer) |
 | Customers | 20 (12 PolicyHolders, 8 Dependents) |
 | Insurance Cards | 23 |
-| Claims | 31 (mixed New/Processing/Done statuses) |
+| Claims | 41 (mixed New/Processing/Done statuses) |
 
 ## 9. System Architecture
 
@@ -223,15 +223,14 @@ src/
     ActivityLogger.java        # Audit trail
     ReportService.java         # Analytics and reports
     UserManager.java           # User CRUD
-    CardService.java           # Card queries
-    ClaimService.java          # Claim queries
-    CustomerService.java       # Customer queries
   ui/
     ConsoleUI.java             # Interactive menu system
     InputHelper.java           # Validated input utilities
   interfaces/
     ClaimManageable.java       # Claim operations contract
     UserManageable.java        # User operations contract
+  util/
+    Validator.java             # Centralized validation rules
   exceptions/
     AuthenticationException.java
     InvalidStatusTransitionException.java
