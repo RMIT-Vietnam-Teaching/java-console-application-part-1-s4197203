@@ -310,6 +310,10 @@ public class ConsoleUI {
             System.out.println("  User not found.");
             return;
         }
+        if (userId.equals(authService.getCurrentUser().getUserId())) {
+            System.out.println("  Error: You cannot deactivate your own account.");
+            return;
+        }
         if (!input.confirm("Deactivate " + user.getFullName() + "?")) {
             System.out.println("  Cancelled.");
             return;

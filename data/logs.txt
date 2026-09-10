@@ -14,3 +14,4 @@
 2026-07-10 12:30:00 | off02 | Processed claim | f-1234567894
 2026-07-10 13:00:00 | cust02 | Login successful | cust02
 2026-07-10 13:15:00 | cust02 | Submitted claim | f-1234567910
+2026-09-10 14:05:06 | test-user | Test Action | test-entity-123
