@@ -129,7 +129,7 @@ public class Claim {
     public ClaimStatus getNextStatus() {
         if (status == ClaimStatus.NEW) return ClaimStatus.PROCESSING;
         if (status == ClaimStatus.PROCESSING) return ClaimStatus.DONE;
-        return ClaimStatus.DONE;
+        return null;
     }
 
     @Override

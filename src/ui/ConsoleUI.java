@@ -47,22 +47,28 @@ public class ConsoleUI {
     // ==================== MAIN RUN LOOP ====================
 
     public void run() {
-        while (true) {
-            User loggedUser = loginScreen();
-            if (loggedUser == null) return;
-            loggedUser.displayDashboard();
-            switch (loggedUser.getRole()) {
-                case ADMIN:
-                    adminMenu(loggedUser);
-                    break;
-                case CLAIMS_OFFICER:
-                    officerMenu(loggedUser);
-                    break;
-                case CUSTOMER:
-                    customerMenu(loggedUser);
-                    break;
+        try {
+            while (true) {
+                User loggedUser = loginScreen();
+                if (loggedUser == null) return;
+                loggedUser.displayDashboard();
+                switch (loggedUser.getRole()) {
+                    case ADMIN:
+                        adminMenu(loggedUser);
+                        break;
+                    case CLAIMS_OFFICER:
+                        officerMenu(loggedUser);
+                        break;
+                    case CUSTOMER:
+                        customerMenu(loggedUser);
+                        break;
+                }
+                authService.logout();
             }
-            authService.logout();
+        } catch (java.util.NoSuchElementException e) {
+            System.out.println("\nEnd of input detected. Saving and exiting...");
+            autoSave();
+            System.out.println("  Data saved. Goodbye!");
         }
     }
 
@@ -269,6 +275,7 @@ public class ConsoleUI {
             System.out.println("  Error: " + error);
         } else {
             logger.log(authService.getCurrentUser().getUserId(), "Added user", userId);
+            autoSave();
             System.out.println("  User added successfully.");
         }
     }
@@ -290,6 +297,7 @@ public class ConsoleUI {
             System.out.println("  Error: " + error);
         } else {
             logger.log(authService.getCurrentUser().getUserId(), "Updated user", userId);
+            autoSave();
             System.out.println("  User updated.");
         }
     }
@@ -302,13 +310,18 @@ public class ConsoleUI {
             System.out.println("  User not found.");
             return;
         }
-        if (!input.confirm("Delete " + user.getFullName() + "?")) {
+        if (!input.confirm("Deactivate " + user.getFullName() + "?")) {
             System.out.println("  Cancelled.");
             return;
         }
-        userManager.deleteUser(userId);
-        logger.log(authService.getCurrentUser().getUserId(), "Deleted user", userId);
-        System.out.println("  User deleted.");
+        String error = userManager.deleteUser(userId);
+        if (error != null) {
+            System.out.println("  Error: " + error);
+        } else {
+            logger.log(authService.getCurrentUser().getUserId(), "Deactivated user", userId);
+            autoSave();
+            System.out.println("  User deactivated.");
+        }
     }
 
     // ==================== CUSTOMER MANAGEMENT ====================
@@ -353,6 +366,7 @@ public class ConsoleUI {
         if (error != null) System.out.println("  Error: " + error);
         else {
             logger.log(authService.getCurrentUser().getUserId(), "Added customer", id);
+            autoSave();
             System.out.println("  Customer added.");
         }
     }
@@ -371,6 +385,7 @@ public class ConsoleUI {
         if (error != null) System.out.println("  Error: " + error);
         else {
             logger.log(authService.getCurrentUser().getUserId(), "Updated customer", id);
+            autoSave();
             System.out.println("  Updated.");
         }
     }
@@ -385,6 +400,7 @@ public class ConsoleUI {
         }
         claimManager.deleteCustomer(id);
         logger.log(authService.getCurrentUser().getUserId(), "Deleted customer", id);
+        autoSave();
         System.out.println("  Deleted.");
     }
 
@@ -433,6 +449,7 @@ public class ConsoleUI {
         if (error != null) System.out.println("  Error: " + error);
         else {
             logger.log(authService.getCurrentUser().getUserId(), "Added card", cardNumber);
+            autoSave();
             System.out.println("  Card added.");
         }
     }
@@ -456,6 +473,7 @@ public class ConsoleUI {
         if (error != null) System.out.println("  Error: " + error);
         else {
             logger.log(authService.getCurrentUser().getUserId(), "Updated card", cardNumber);
+            autoSave();
             System.out.println("  Updated.");
         }
     }
@@ -468,6 +486,7 @@ public class ConsoleUI {
         if (!input.confirm("Delete card " + cardNumber + "?")) { System.out.println("  Cancelled."); return; }
         claimManager.deleteCard(cardNumber);
         logger.log(authService.getCurrentUser().getUserId(), "Deleted card", cardNumber);
+        autoSave();
         System.out.println("  Deleted.");
     }
 
@@ -526,6 +545,7 @@ public class ConsoleUI {
         if (error != null) System.out.println("  Error: " + error);
         else {
             logger.log(authService.getCurrentUser().getUserId(), "Added claim", id);
+            autoSave();
             System.out.println("  Claim added.");
         }
     }
@@ -547,6 +567,7 @@ public class ConsoleUI {
             if (error != null) System.out.println("  Error: " + error);
             else {
                 logger.log(authService.getCurrentUser().getUserId(), "Updated claim status", id);
+                autoSave();
                 System.out.println("  Updated.");
             }
         } catch (InvalidStatusTransitionException e) {
@@ -566,6 +587,7 @@ public class ConsoleUI {
         if (error != null) System.out.println("  Error: " + error);
         else {
             logger.log(authService.getCurrentUser().getUserId(), "Added document", claimId);
+            autoSave();
             System.out.println("  Document added.");
         }
     }
@@ -633,6 +655,7 @@ public class ConsoleUI {
         if (!input.confirm("Delete claim " + id + "?")) { System.out.println("  Cancelled."); return; }
         claimManager.deleteClaim(id);
         logger.log(authService.getCurrentUser().getUserId(), "Deleted claim", id);
+        autoSave();
         System.out.println("  Deleted.");
     }
 
@@ -644,12 +667,16 @@ public class ConsoleUI {
         scanner.nextLine();
     }
 
+    private ReportService createReportService() {
+        return new ReportService(
+                claimManager.getCustomers(), claimManager.getCards(), claimManager.getClaims());
+    }
+
     private void financialReport() {
         System.out.println("\n  1. Full Financial Report");
         System.out.println("  2. Financial Report by Date Range");
         int c = input.promptInt("Choose: ", 1, 2);
-        ReportService report = new ReportService(
-                claimManager.getCustomers(), claimManager.getCards(), claimManager.getClaims());
+        ReportService report = createReportService();
         if (c == 1) {
             System.out.println(report.generateFinancialReport());
         } else {
@@ -662,8 +689,7 @@ public class ConsoleUI {
     }
 
     private void officerPerformanceReport() {
-        ReportService report = new ReportService(
-                claimManager.getCustomers(), claimManager.getCards(), claimManager.getClaims());
+        ReportService report = createReportService();
         ArrayList<User> officers = userManager.getUsersByRole(UserRole.CLAIMS_OFFICER);
         System.out.println(report.generateOfficerPerformanceReport(officers));
         System.out.println("\nPress Enter to continue...");
@@ -671,8 +697,7 @@ public class ConsoleUI {
     }
 
     private void tierSummary() {
-        ReportService report = new ReportService(
-                claimManager.getCustomers(), claimManager.getCards(), claimManager.getClaims());
+        ReportService report = createReportService();
         System.out.println(report.generateTierSummary());
         System.out.println("\nPress Enter to continue...");
         scanner.nextLine();
@@ -839,18 +864,23 @@ public class ConsoleUI {
         if (error != null) System.out.println("  Error: " + error);
         else {
             logger.log(authService.getCurrentUser().getUserId(), "Submitted claim", id);
+            autoSave();
             System.out.println("  Claim submitted.");
         }
     }
 
     // ==================== SAVE & EXIT ====================
 
-    private void saveAndLogout(User user) {
-        System.out.println("\nSaving data...");
+    private void autoSave() {
         fileManager.saveCustomers(dataDir + "/customers.txt", claimManager.getCustomers());
         fileManager.saveCards(dataDir + "/cards.txt", claimManager.getCards());
         fileManager.saveClaims(dataDir + "/claims.txt", claimManager.getClaims());
         fileManager.saveUsers(dataDir + "/users.txt", userManager.getUsers());
+    }
+
+    private void saveAndLogout(User user) {
+        System.out.println("\nSaving data...");
+        autoSave();
         logger.log(user.getUserId(), "Logout", user.getUserId());
         System.out.println("  Data saved. Goodbye!");
     }

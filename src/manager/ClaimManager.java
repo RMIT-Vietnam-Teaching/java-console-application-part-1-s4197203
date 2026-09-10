@@ -11,6 +11,7 @@ import model.Customer;
 import model.CustomerType;
 import model.InsuranceCard;
 import model.MembershipTier;
+import util.Validator;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -38,13 +39,13 @@ public class ClaimManager implements ClaimManageable, CardManageable, CustomerMa
     }
 
     @Override
-    public ArrayList<Customer> getCustomers() { return customers; }
+    public ArrayList<Customer> getCustomers() { return new ArrayList<>(customers); }
     public void setCustomers(ArrayList<Customer> customers) { this.customers = customers; }
     @Override
-    public ArrayList<InsuranceCard> getCards() { return cards; }
+    public ArrayList<InsuranceCard> getCards() { return new ArrayList<>(cards); }
     public void setCards(ArrayList<InsuranceCard> cards) { this.cards = cards; }
     @Override
-    public ArrayList<Claim> getClaims() { return claims; }
+    public ArrayList<Claim> getClaims() { return new ArrayList<>(claims); }
     public void setClaims(ArrayList<Claim> claims) { this.claims = claims; }
 
     // ==================== CUSTOMER OPERATIONS ====================
@@ -260,9 +261,10 @@ public class ClaimManager implements ClaimManageable, CardManageable, CustomerMa
     public String addDocumentToClaim(String claimId, String documentName) {
         Claim claim = getClaimById(claimId);
         if (claim == null) return "Claim not found.";
-        String expectedPrefix = claimId + "_" + claim.getCardNumber() + "_";
-        if (!documentName.startsWith(expectedPrefix)) return "Document name must start with: " + expectedPrefix;
-        if (!documentName.endsWith(".pdf")) return "Document name must end with .pdf";
+        if (claim.getStatus() == ClaimStatus.DONE) return "Cannot add documents to a DONE claim.";
+        if (!Validator.isValidDocumentName(documentName, claimId, claim.getCardNumber())) {
+            return "Document name must match format: " + claimId + "_" + claim.getCardNumber() + "_DocName.pdf";
+        }
         claim.getDocuments().add(documentName);
         return null;
     }
@@ -435,7 +437,7 @@ public class ClaimManager implements ClaimManageable, CardManageable, CustomerMa
     // ==================== VALIDATION ====================
 
     private String validateCustomer(Customer c) {
-        if (!c.getId().matches("c-\\d{7}")) {
+        if (!Validator.isValidCustomerId(c.getId())) {
             return "Customer ID must be 'c-' followed by exactly 7 digits.";
         }
         if (getCustomerById(c.getId()) != null) {
@@ -471,7 +473,7 @@ public class ClaimManager implements ClaimManageable, CardManageable, CustomerMa
     }
 
     private String validateCard(InsuranceCard card) {
-        if (!card.getCardNumber().matches("\\d{10}")) return "Card number must be exactly 10 digits.";
+        if (!Validator.isValidCardNumber(card.getCardNumber())) return "Card number must be exactly 10 digits.";
         if (getCardByNumber(card.getCardNumber()) != null) return "Card number already exists.";
         if (getCustomerById(card.getCardHolderId()) == null) return "Card holder ID not found.";
         Customer owner = getCustomerById(card.getPolicyOwnerId());
@@ -488,11 +490,11 @@ public class ClaimManager implements ClaimManageable, CardManageable, CustomerMa
      * @throws InvalidClaimDateException if exam date is after claim date or after card expiration
      */
     private String validateClaim(Claim claim) throws InvalidClaimDateException {
-        if (!claim.getId().matches("f-\\d{10}")) {
+        if (!Validator.isValidClaimId(claim.getId())) {
             return "Claim ID must be 'f-' followed by exactly 10 digits.";
         }
         if (getClaimById(claim.getId()) != null) return "Claim ID already exists.";
-        if (claim.getClaimAmount() <= 0) return "Claim amount must be positive.";
+        if (!Validator.isPositiveAmount(claim.getClaimAmount())) return "Claim amount must be positive.";
         if (getCustomerById(claim.getInsuredPersonId()) == null) return "Insured person not found.";
         InsuranceCard card = getCardByNumber(claim.getCardNumber());
         if (card == null) return "Card not found.";

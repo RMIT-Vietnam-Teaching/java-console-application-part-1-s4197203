@@ -50,8 +50,8 @@ public class ReportService {
                     Customer cust = getCustomerById(c.getInsuredPersonId());
                     if (cust != null) {
                         MembershipTier tier = cust.getMembershipTier();
-                        totalCoPay += Math.round(c.getClaimAmount() * tier.getEffectiveCoPayRate() * 100.0) / 100.0;
-                        totalPayout += Math.round(c.getClaimAmount() * (1.0 - tier.getEffectiveCoPayRate()) * 100.0) / 100.0;
+                        totalCoPay += calculateCoPay(c.getClaimAmount(), tier);
+                        totalPayout += calculatePayout(c.getClaimAmount(), tier);
                     }
                     break;
             }
@@ -109,8 +109,8 @@ public class ReportService {
                 Customer cust = getCustomerById(c.getInsuredPersonId());
                 if (cust != null) {
                     MembershipTier tier = cust.getMembershipTier();
-                    totalCoPay += Math.round(c.getClaimAmount() * tier.getEffectiveCoPayRate() * 100.0) / 100.0;
-                    totalPayout += Math.round(c.getClaimAmount() * (1.0 - tier.getEffectiveCoPayRate()) * 100.0) / 100.0;
+                    totalCoPay += calculateCoPay(c.getClaimAmount(), tier);
+                    totalPayout += calculatePayout(c.getClaimAmount(), tier);
                 }
                 count++;
             }
@@ -146,8 +146,8 @@ public class ReportService {
                         Customer cust = getCustomerById(c.getInsuredPersonId());
                         if (cust != null) {
                             MembershipTier tier = cust.getMembershipTier();
-                            totalCoPay += Math.round(c.getClaimAmount() * tier.getEffectiveCoPayRate() * 100.0) / 100.0;
-                            totalPayout += Math.round(c.getClaimAmount() * (1.0 - tier.getEffectiveCoPayRate()) * 100.0) / 100.0;
+                            totalCoPay += calculateCoPay(c.getClaimAmount(), tier);
+                            totalPayout += calculatePayout(c.getClaimAmount(), tier);
                         }
                     }
                 }
@@ -186,8 +186,8 @@ public class ReportService {
                     MembershipTier tier = cust.getMembershipTier();
                     double[] stats = tierStats.get(tier);
                     stats[0] += c.getClaimAmount();
-                    stats[1] += Math.round(c.getClaimAmount() * tier.getEffectiveCoPayRate() * 100.0) / 100.0;
-                    stats[2] += Math.round(c.getClaimAmount() * (1.0 - tier.getEffectiveCoPayRate()) * 100.0) / 100.0;
+                    stats[1] += calculateCoPay(c.getClaimAmount(), tier);
+                    stats[2] += calculatePayout(c.getClaimAmount(), tier);
                     stats[3]++;
                 }
             }
@@ -266,8 +266,8 @@ public class ReportService {
                     Customer cust = getCustomerById(c.getInsuredPersonId());
                     if (cust != null) {
                         MembershipTier tier = cust.getMembershipTier();
-                        totalCoPay += Math.round(c.getClaimAmount() * tier.getEffectiveCoPayRate() * 100.0) / 100.0;
-                        totalPayout += Math.round(c.getClaimAmount() * (1.0 - tier.getEffectiveCoPayRate()) * 100.0) / 100.0;
+                        totalCoPay += calculateCoPay(c.getClaimAmount(), tier);
+                        totalPayout += calculatePayout(c.getClaimAmount(), tier);
                     }
                 }
             }
@@ -280,6 +280,14 @@ public class ReportService {
     }
 
     // ==================== HELPER METHODS ====================
+
+    private double calculateCoPay(double claimAmount, MembershipTier tier) {
+        return Math.round(claimAmount * tier.getEffectiveCoPayRate() * 100.0) / 100.0;
+    }
+
+    private double calculatePayout(double claimAmount, MembershipTier tier) {
+        return Math.round(claimAmount * (1.0 - tier.getEffectiveCoPayRate()) * 100.0) / 100.0;
+    }
 
     private Customer getCustomerById(String id) {
         for (Customer c : customers) {

@@ -35,11 +35,27 @@ public class UserManager implements UserManageable {
     }
 
     @Override
-    public void deleteUser(String userId) {
+    public String deleteUser(String userId) {
         User user = getUserById(userId);
-        if (user != null) {
-            user.setStatus(UserStatus.INACTIVE);
+        if (user == null) return "User not found.";
+        if (user.getStatus() == UserStatus.INACTIVE) return "User is already inactive.";
+
+        for (User u : users) {
+            if (u.getUserId().equals(userId) && u.getRole() == UserRole.ADMIN) {
+                int activeAdmins = 0;
+                for (User u2 : users) {
+                    if (u2.getRole() == UserRole.ADMIN && u2.getStatus() == UserStatus.ACTIVE
+                            && !u2.getUserId().equals(userId)) {
+                        activeAdmins++;
+                    }
+                }
+                if (activeAdmins == 0) return "Cannot deactivate: this is the last active admin.";
+                break;
+            }
         }
+
+        user.setStatus(UserStatus.INACTIVE);
+        return null;
     }
 
     @Override

@@ -179,7 +179,7 @@ public class FileManager {
                 writer.println(claim.getId() + PIPE + claim.getClaimDate().format(DATE_FORMATTER) + PIPE +
                         claim.getInsuredPersonId() + PIPE + claim.getCardNumber() + PIPE +
                         claim.getExamDate().format(DATE_FORMATTER) + PIPE + docs + PIPE +
-                        claim.getClaimAmount() + PIPE + claim.getStatusLabel() + PIPE + processedBy);
+                        String.format("%.2f", claim.getClaimAmount()) + PIPE + claim.getStatusLabel() + PIPE + processedBy);
             }
         } catch (IOException e) {
             System.err.println("Error saving claims to " + filePath + ": " + e.getMessage());

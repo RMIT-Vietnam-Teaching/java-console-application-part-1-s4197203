@@ -1,5 +1,7 @@
 package ui;
 
+import util.Validator;
+
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -99,7 +101,7 @@ public class InputHelper {
         while (true) {
             System.out.print(message + " (c-XXXXXXX): ");
             String input = scanner.nextLine().trim();
-            if (input.matches("c-\\d{7}")) return input;
+            if (Validator.isValidCustomerId(input)) return input;
             System.out.println("  Invalid format. Customer ID must be: c- followed by 7 digits (e.g., c-1234567).");
         }
     }
@@ -111,7 +113,7 @@ public class InputHelper {
         while (true) {
             System.out.print(message + " (f-XXXXXXXXXX): ");
             String input = scanner.nextLine().trim();
-            if (input.matches("f-\\d{10}")) return input;
+            if (Validator.isValidClaimId(input)) return input;
             System.out.println("  Invalid format. Claim ID must be: f- followed by 10 digits (e.g., f-1234567890).");
         }
     }
