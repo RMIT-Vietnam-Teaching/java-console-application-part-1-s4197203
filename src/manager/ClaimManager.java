@@ -526,9 +526,9 @@ public class ClaimManager implements ClaimManageable, CardManageable, CustomerMa
                 "Exam date (" + claim.getExamDate() + ") must be on or before claim date (" + claim.getClaimDate() + ").");
         }
 
-        if (claim.getExamDate().isAfter(card.getExpirationDate())) {
+        if (!claim.getExamDate().isBefore(card.getExpirationDate())) {
             throw new InvalidClaimDateException(
-                "Exam date (" + claim.getExamDate() + ") must be before card expiration (" + card.getExpirationDate() + ").");
+                "Exam date (" + claim.getExamDate() + ") must be strictly before card expiration (" + card.getExpirationDate() + ").");
         }
         return null;
     }

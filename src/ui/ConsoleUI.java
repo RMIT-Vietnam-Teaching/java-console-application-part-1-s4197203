@@ -243,7 +243,7 @@ public class ConsoleUI {
 
     private void addUser() {
         System.out.println("\n--- Add New User ---");
-        String userId = input.promptString("User ID: ");
+        String userId = input.promptUserId("User ID");
         if (userManager.getUserById(userId) != null) {
             System.out.println("  Error: User ID already exists.");
             return;
@@ -295,7 +295,7 @@ public class ConsoleUI {
 
     private void updateUser() {
         System.out.println("\n--- Update User ---");
-        String userId = input.promptString("User ID: ");
+        String userId = input.promptUserId("User ID");
         User user = userManager.getUserById(userId);
         if (user == null) {
             System.out.println("  User not found.");
@@ -317,7 +317,7 @@ public class ConsoleUI {
 
     private void deleteUser() {
         System.out.println("\n--- Delete User ---");
-        String userId = input.promptString("User ID: ");
+        String userId = input.promptUserId("User ID");
         User user = userManager.getUserById(userId);
         if (user == null) {
             System.out.println("  User not found.");
@@ -717,14 +717,32 @@ public class ConsoleUI {
 
     private void financialReport() {
         System.out.println("\n  1. Full Financial Report");
-        System.out.println("  2. Financial Report by Date Range");
-        int c = input.promptInt("Choose: ", 1, 2);
+        System.out.println("  2. Approved Claims - Today");
+        System.out.println("  3. Approved Claims - Last 7 Days (Week)");
+        System.out.println("  4. Approved Claims - This Month");
+        System.out.println("  5. Approved Claims - Custom Date Range");
+        int c = input.promptInt("Choose: ", 1, 5);
         ReportService report = createReportService();
         if (c == 1) {
             System.out.println(report.generateFinancialReport());
         } else {
-            LocalDateTime start = input.promptDateTime("Start Date");
-            LocalDateTime end = input.promptDateTime("End Date");
+            LocalDateTime today = LocalDateTime.now().toLocalDate().atStartOfDay();
+            LocalDateTime start;
+            LocalDateTime end = today.toLocalDate().atTime(23, 59, 59);
+            switch (c) {
+                case 2:
+                    start = today;
+                    break;
+                case 3:
+                    start = today.minusDays(6);
+                    break;
+                case 4:
+                    start = today.withDayOfMonth(1);
+                    break;
+                default:
+                    start = input.promptDateTime("Start Date");
+                    end = input.promptDateTime("End Date");
+            }
             System.out.println(report.generateFinancialReportByDateRange(start, end));
         }
         System.out.println("\nPress Enter to continue...");

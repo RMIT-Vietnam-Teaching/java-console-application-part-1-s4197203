@@ -12,27 +12,34 @@ package model;
  * @author Nguyen Khanh Nguyen - s4197203
  */
 public enum MembershipTier {
-    STANDARD("Standard", 0.00, 0.30),
-    SILVER("Silver", 0.05, 0.285),
-    GOLD("Gold", 0.10, 0.27),
-    PLATINUM("Platinum", 0.15, 0.255);
+    STANDARD("Standard", 0.00),
+    SILVER("Silver", 0.05),
+    GOLD("Gold", 0.10),
+    PLATINUM("Platinum", 0.15);
 
     private final String label;
     private final double tierDiscount;
-    private final double effectiveCoPayRate;
 
-    /** Base co-pay rate applied to all claims before tier discount. */
+    /** Base co-pay rate applied to all claims before any tier discount. */
     public static final double BASE_COPAY_RATE = 0.30;
 
-    MembershipTier(String label, double tierDiscount, double effectiveCoPayRate) {
+    MembershipTier(String label, double tierDiscount) {
         this.label = label;
         this.tierDiscount = tierDiscount;
-        this.effectiveCoPayRate = effectiveCoPayRate;
     }
 
     public String getLabel() { return label; }
     public double getTierDiscount() { return tierDiscount; }
-    public double getEffectiveCoPayRate() { return effectiveCoPayRate; }
+
+    /**
+     * Effective co-pay rate derived dynamically from the base rate and tier discount.
+     * Effective Co-Pay Rate = BASE_COPAY_RATE * (1 - tierDiscount).
+     *
+     * @return the effective co-pay rate (e.g., 0.285 for Silver)
+     */
+    public double getEffectiveCoPayRate() {
+        return Math.round(BASE_COPAY_RATE * (1.0 - tierDiscount) * 1000.0) / 1000.0;
+    }
 
     /**
      * Determines the membership tier based on total approved claim spending.

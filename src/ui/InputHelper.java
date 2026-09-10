@@ -107,6 +107,18 @@ public class InputHelper {
     }
 
     /**
+     * Prompts for a user ID with format validation.
+     */
+    public String promptUserId(String message) {
+        while (true) {
+            System.out.print(message + " (u-XXXXXXX): ");
+            String input = scanner.nextLine().trim();
+            if (Validator.isValidUserId(input)) return input;
+            System.out.println("  Invalid format. User ID must be: u- followed by 7 digits (e.g., u-0000001).");
+        }
+    }
+
+    /**
      * Prompts for a claim ID with format validation.
      */
     public String promptClaimId(String message) {

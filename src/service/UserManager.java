@@ -4,6 +4,7 @@ import interfaces.UserManageable;
 import model.User;
 import model.UserRole;
 import model.UserStatus;
+import util.Validator;
 
 import java.util.ArrayList;
 
@@ -20,6 +21,9 @@ public class UserManager implements UserManageable {
 
     @Override
     public String addUser(User user) {
+        if (!Validator.isValidUserId(user.getUserId())) {
+            return "User ID must be 'u-' followed by exactly 7 digits.";
+        }
         if (getUserById(user.getUserId()) != null) return "User ID already exists.";
         users.add(user);
         return null;

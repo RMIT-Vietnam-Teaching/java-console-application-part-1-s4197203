@@ -48,8 +48,8 @@ public class TestSuite {
         check("isValidClaimId invalid", !Validator.isValidClaimId("bad"));
         check("isValidCardNumber valid", Validator.isValidCardNumber("1000000001"));
         check("isValidCardNumber invalid", !Validator.isValidCardNumber("123"));
-        check("isValidUserId valid", Validator.isValidUserId("admin01"));
-        check("isValidUserId invalid", !Validator.isValidUserId("bad"));
+        check("isValidUserId valid", Validator.isValidUserId("u-0000001"));
+        check("isValidUserId invalid", !Validator.isValidUserId("admin01"));
         check("isPositiveAmount valid", Validator.isPositiveAmount(100));
         check("isPositiveAmount zero", !Validator.isPositiveAmount(0));
         check("isPositiveAmount negative", !Validator.isPositiveAmount(-1));
@@ -175,9 +175,9 @@ public class TestSuite {
         check("addClaim success", cm.addClaim(newClaim) == null);
         check("addClaim duplicate rejected", cm.addClaim(new Claim("f-9999999999", LocalDateTime.of(2026, 8, 1, 10, 0), "c-1000001", "1000000001", LocalDateTime.of(2026, 7, 31, 9, 0), 500, "New")) != null);
         try {
-            check("updateClaimStatus NEW->PROCESSING", cm.updateClaimStatus("f-9999999999", "Processing", "off01") == null);
-            check("updateClaimStatus processedBy", cm.getClaimById("f-9999999999").getProcessedBy().equals("off01"));
-            check("updateClaimStatus PROCESSING->DONE", cm.updateClaimStatus("f-9999999999", "Done", "off01") == null);
+            check("updateClaimStatus NEW->PROCESSING", cm.updateClaimStatus("f-9999999999", "Processing", "u-0000003") == null);
+            check("updateClaimStatus processedBy", cm.getClaimById("f-9999999999").getProcessedBy().equals("u-0000003"));
+            check("updateClaimStatus PROCESSING->DONE", cm.updateClaimStatus("f-9999999999", "Done", "u-0000003") == null);
         } catch (InvalidStatusTransitionException e) { check("status update", false); }
         boolean threw = false;
         try { cm.updateClaimStatus("f-9999999999", "New", "off01"); } catch (InvalidStatusTransitionException e) { threw = true; }
@@ -205,16 +205,17 @@ public class TestSuite {
         FileManager fm = new FileManager();
         um.setUsers(fm.loadUsers("data/users.txt"));
         check("getUsers not empty", !um.getUsers().isEmpty());
-        check("getUserById exists", um.getUserById("admin01") != null);
+        check("getUserById exists", um.getUserById("u-0000001") != null);
         check("getUsersByRole ADMIN", !um.getUsersByRole(UserRole.ADMIN).isEmpty());
-        check("addUser success", um.addUser(new ClaimsOfficer("test-u1", "ta", "pass", "T", "t@t.com", UserStatus.ACTIVE)) == null);
-        check("addUser duplicate rejected", um.addUser(new ClaimsOfficer("test-u1", "ta", "pass", "T", "t@t.com", UserStatus.ACTIVE)) != null);
-        check("updateUser success", um.updateUser("test-u1", "New Name", null) == null);
-        um.deleteUser("admin02");
-        String adminDeleteResult = um.deleteUser("admin01");
+        check("addUser invalid ID format rejected", um.addUser(new ClaimsOfficer("test-u1", "ta", "pass", "T", "t@t.com", UserStatus.ACTIVE)) != null);
+        check("addUser success", um.addUser(new ClaimsOfficer("u-9000001", "ta", "pass", "T", "t@t.com", UserStatus.ACTIVE)) == null);
+        check("addUser duplicate rejected", um.addUser(new ClaimsOfficer("u-9000001", "ta", "pass", "T", "t@t.com", UserStatus.ACTIVE)) != null);
+        check("updateUser success", um.updateUser("u-9000001", "New Name", null) == null);
+        um.deleteUser("u-0000002");
+        String adminDeleteResult = um.deleteUser("u-0000001");
         check("deleteUser last admin rejected", adminDeleteResult != null && adminDeleteResult.contains("last active admin"));
-        um.deleteUser("test-u1");
-        check("deleteUser success", um.getUserById("test-u1").getStatus() == UserStatus.INACTIVE);
+        um.deleteUser("u-9000001");
+        check("deleteUser success", um.getUserById("u-9000001").getStatus() == UserStatus.INACTIVE);
     }
 
     static void testAuthentication() {
@@ -272,5 +273,6 @@ public class TestSuite {
         cm.setClaims(fm.loadClaims("data/claims.txt"));
         check("examDate after claimDate rejected", cm.addClaim(new Claim("f-9999999997", LocalDateTime.of(2026, 8, 1, 10, 0), "c-1000001", "1000000001", LocalDateTime.of(2026, 8, 2, 9, 0), 500, "New")) != null);
         check("examDate after expiry rejected", cm.addClaim(new Claim("f-9999999996", LocalDateTime.of(2029, 1, 1, 10, 0), "c-1000001", "1000000001", LocalDateTime.of(2028, 12, 31, 9, 0), 500, "New")) != null);
+        check("examDate equal to expiry rejected", cm.addClaim(new Claim("f-9999999995", LocalDateTime.of(2027, 12, 31, 9, 0), "c-1000001", "1000000001", LocalDateTime.of(2027, 12, 31, 23, 59, 59), 500, "New")) != null);
     }
 }

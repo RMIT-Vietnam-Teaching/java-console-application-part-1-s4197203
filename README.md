@@ -70,7 +70,7 @@ All system data is stored in pipe-delimited text files under the `data/` directo
 
 Dates are serialized in ISO-8601 format (e.g., `2026-07-10T14:30:00`).
 
-**Sample Data:** 26 users, 20 customers, 23 cards, 41 claims pre-loaded.
+**Sample Data:** 26 users, 20 customers, 23 cards, 44 claims pre-loaded.
 
 **Saving:** Data is auto-saved to disk after every change, and fully persisted when you choose the **Save and Logout** option.
 
@@ -79,10 +79,10 @@ Dates are serialized in ISO-8601 format (e.g., `2026-07-10T14:30:00`).
 **users.txt** `userId|username|password|fullName|email|role|status|customerId[|parentPolicyHolderId]`
 
 ```
-admin01|admin01|admin123|Nguyen Minh Admin|minh.admin@claimshield.com|Admin|Active
-off01|officer01|off123|Le Van Officer|van.officer@claimshield.com|ClaimsOfficer|Active
-cust01|nguyenva|pass123|Nguyen Van An|van.an@gmail.com|Customer|Active|c-1000001
-cust13|nguyentl|pass010|Nguyen Thi Lan|thi.lan.dep@gmail.com|Customer|Active|c-2000001|c-1000001
+u-0000001|admin01|admin123|Nguyen Minh Admin|minh.admin@claimshield.com|Admin|Active
+u-0000003|officer01|off123|Le Van Officer|van.officer@claimshield.com|ClaimsOfficer|Active
+u-0000006|nguyenva|pass123|Nguyen Van An|van.an@gmail.com|Customer|Active|c-1000001
+u-0000018|nguyentl|pass010|Nguyen Thi Lan|thi.lan.dep@gmail.com|Customer|Active|c-2000001|c-1000001
 ```
 
 **customers.txt** `id|fullName|customerType|parentPolicyHolderId|cardReference|totalApprovedClaimAmount`
@@ -167,6 +167,7 @@ Every add, update, and delete action must append an audit entry recording timest
 
 | Rule | Description |
 |------|-------------|
+| User ID | Must be `u-` followed by exactly 7 digits (e.g., `u-0000001`) |
 | Customer ID | Must be `c-` followed by exactly 7 digits (e.g., `c-1234567`) |
 | Claim ID | Must be `f-` followed by exactly 10 digits (e.g., `f-1234567890`) |
 | Card Number | Must be exactly 10 digits |
@@ -195,7 +196,7 @@ Every add, update, and delete action must append an audit entry recording timest
 | Users | 26 (2 Admin, 3 ClaimsOfficer, 21 Customer) |
 | Customers | 20 (12 PolicyHolders, 8 Dependents) |
 | Insurance Cards | 23 |
-| Claims | 41 (mixed New/Processing/Done statuses) |
+| Claims | 44 (mixed New/Processing/Done statuses) |
 
 ## 9. System Architecture
 
