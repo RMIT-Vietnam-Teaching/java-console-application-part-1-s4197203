@@ -47,6 +47,21 @@ public class Main {
             }
         }
 
+        for (int i = 0; i < users.size(); i++) {
+            User u = users.get(i);
+            if (u instanceof PolicyHolder) {
+                PolicyHolder ph = (PolicyHolder) u;
+                for (Customer c : customers) {
+                    if (c.getId().equals(ph.getCustomerId()) && c.isDependent()) {
+                        users.set(i, new Dependent(ph.getUserId(), ph.getUsername(), ph.getPassword(),
+                                ph.getFullName(), ph.getEmail(), ph.getStatus(),
+                                c.getId(), c.getParentPolicyHolderId()));
+                        break;
+                    }
+                }
+            }
+        }
+
         for (User u : users) {
             if (u instanceof PolicyHolder) {
                 PolicyHolder ph = (PolicyHolder) u;

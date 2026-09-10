@@ -125,7 +125,7 @@ public class InputHelper {
         while (true) {
             System.out.print(message + " (10 digits): ");
             String input = scanner.nextLine().trim();
-            if (input.matches("\\d{10}")) return input;
+            if (Validator.isValidCardNumber(input)) return input;
             System.out.println("  Card number must be exactly 10 digits.");
         }
     }

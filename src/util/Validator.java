@@ -14,7 +14,7 @@ public final class Validator {
     public static final String CUSTOMER_ID_REGEX = "c-\\d{7}";
     public static final String CLAIM_ID_REGEX = "f-\\d{10}";
     public static final String CARD_NUMBER_REGEX = "\\d{10}";
-    public static final String USER_ID_REGEX = "u-\\d{7}";
+    public static final String USER_ID_REGEX = "[a-z]{3,5}\\d{2}";
 
     public static final int USERNAME_MIN = 3;
     public static final int USERNAME_MAX = 50;

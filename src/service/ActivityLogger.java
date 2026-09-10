@@ -16,7 +16,7 @@ public class ActivityLogger {
     public void log(String userId, String action, String targetEntityId) {
         String entry = String.format("%s | %s | %s | %s", LocalDateTime.now().format(FMT), userId, action, targetEntityId);
         try (PrintWriter pw = new PrintWriter(new FileWriter(logFilePath, true))) {
-            pw.println(entry);
+            pw.print(entry + "\n");
         } catch (IOException e) {
             System.err.println("Failed to write log: " + e.getMessage());
         }

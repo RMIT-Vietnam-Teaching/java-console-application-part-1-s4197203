@@ -70,9 +70,9 @@ public class FileManager {
             for (Customer c : customers) {
                 String parentId = c.getParentPolicyHolderId() == null ? "null" : c.getParentPolicyHolderId();
                 String cardNum = c.getInsuranceCard() != null ? c.getInsuranceCard().getCardNumber() : "null";
-                writer.println(c.getId() + PIPE + c.getFullName() + PIPE +
+                writer.print(c.getId() + PIPE + c.getFullName() + PIPE +
                         c.getCustomerTypeLabel() + PIPE + parentId + PIPE +
-                        cardNum + PIPE + String.format("%.2f", c.getTotalApprovedClaimAmount()));
+                        cardNum + PIPE + String.format("%.2f", c.getTotalApprovedClaimAmount()) + "\n");
             }
         } catch (IOException e) {
             System.err.println("Error saving customers to " + filePath + ": " + e.getMessage());
@@ -117,8 +117,8 @@ public class FileManager {
     public void saveCards(String filePath, ArrayList<InsuranceCard> cards) {
         try (PrintWriter writer = new PrintWriter(new FileWriter(filePath))) {
             for (InsuranceCard card : cards) {
-                writer.println(card.getCardNumber() + PIPE + card.getCardHolderId() + PIPE +
-                        card.getPolicyOwnerId() + PIPE + card.getExpirationDate().format(DATE_FORMATTER));
+                writer.print(card.getCardNumber() + PIPE + card.getCardHolderId() + PIPE +
+                        card.getPolicyOwnerId() + PIPE + card.getExpirationDate().format(DATE_FORMATTER) + "\n");
             }
         } catch (IOException e) {
             System.err.println("Error saving cards to " + filePath + ": " + e.getMessage());
@@ -176,10 +176,10 @@ public class FileManager {
             for (Claim claim : claims) {
                 String docs = claim.getDocuments().isEmpty() ? "null" : String.join(";", claim.getDocuments());
                 String processedBy = claim.getProcessedBy() == null ? "null" : claim.getProcessedBy();
-                writer.println(claim.getId() + PIPE + claim.getClaimDate().format(DATE_FORMATTER) + PIPE +
+                writer.print(claim.getId() + PIPE + claim.getClaimDate().format(DATE_FORMATTER) + PIPE +
                         claim.getInsuredPersonId() + PIPE + claim.getCardNumber() + PIPE +
                         claim.getExamDate().format(DATE_FORMATTER) + PIPE + docs + PIPE +
-                        String.format("%.2f", claim.getClaimAmount()) + PIPE + claim.getStatusLabel() + PIPE + processedBy);
+                        String.format("%.2f", claim.getClaimAmount()) + PIPE + claim.getStatusLabel() + PIPE + processedBy + "\n");
             }
         } catch (IOException e) {
             System.err.println("Error saving claims to " + filePath + ": " + e.getMessage());
@@ -220,9 +220,17 @@ public class FileManager {
                             break;
                         case "Customer":
                             String customerId = parts.length > 7 ? parts[7].trim() : null;
-                            user = new PolicyHolder(parts[0].trim(), parts[1].trim(), parts[2].trim(),
-                                    parts[3].trim(), parts[4].trim(),
-                                    UserStatus.fromLabel(parts[6].trim()), customerId);
+                            String parentId = parts.length > 8 && !parts[8].trim().isEmpty()
+                                    ? parts[8].trim() : null;
+                            if (parentId != null) {
+                                user = new Dependent(parts[0].trim(), parts[1].trim(), parts[2].trim(),
+                                        parts[3].trim(), parts[4].trim(),
+                                        UserStatus.fromLabel(parts[6].trim()), customerId, parentId);
+                            } else {
+                                user = new PolicyHolder(parts[0].trim(), parts[1].trim(), parts[2].trim(),
+                                        parts[3].trim(), parts[4].trim(),
+                                        UserStatus.fromLabel(parts[6].trim()), customerId);
+                            }
                             break;
                         default:
                             System.err.println("Unknown role '" + role + "' at line " + lineNum);
@@ -245,7 +253,7 @@ public class FileManager {
     public void saveUsers(String filePath, ArrayList<User> users) {
         try (PrintWriter writer = new PrintWriter(new FileWriter(filePath))) {
             for (User user : users) {
-                writer.println(user.toFileString());
+                writer.print(user.toFileString() + "\n");
             }
         } catch (IOException e) {
             System.err.println("Error saving users to " + filePath + ": " + e.getMessage());
@@ -279,7 +287,7 @@ public class FileManager {
     public void saveLogs(String filePath, ArrayList<String> logs) {
         try (PrintWriter writer = new PrintWriter(new FileWriter(filePath))) {
             for (String log : logs) {
-                writer.println(log);
+                writer.print(log + "\n");
             }
         } catch (IOException e) {
             System.err.println("Error saving logs to " + filePath + ": " + e.getMessage());
@@ -290,7 +298,8 @@ public class FileManager {
 
     private void createEmptyFile(File file) {
         try {
-            file.getParentFile().mkdirs();
+            File parent = file.getParentFile();
+            if (parent != null) parent.mkdirs();
             file.createNewFile();
         } catch (IOException e) {
             System.err.println("Could not create data file: " + file.getPath());

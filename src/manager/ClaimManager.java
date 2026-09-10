@@ -163,7 +163,12 @@ public class ClaimManager implements ClaimManageable, CardManageable, CustomerMa
     public String deleteCard(String cardNumber) {
         InsuranceCard card = getCardByNumber(cardNumber);
         if (card == null) return "Card not found.";
-        claims.removeIf(claim -> claim.getCardNumber().equals(cardNumber));
+        for (int i = claims.size() - 1; i >= 0; i--) {
+            if (claims.get(i).getCardNumber().equals(cardNumber)) {
+                reverseApprovedAmount(claims.get(i));
+                claims.remove(i);
+            }
+        }
         cards.remove(card);
         return null;
     }
@@ -272,7 +277,10 @@ public class ClaimManager implements ClaimManageable, CardManageable, CustomerMa
     @Override
     public void deleteClaim(String claimId) {
         Claim claim = getClaimById(claimId);
-        if (claim != null) claims.remove(claim);
+        if (claim != null) {
+            reverseApprovedAmount(claim);
+            claims.remove(claim);
+        }
     }
 
     @Override
@@ -377,6 +385,20 @@ public class ClaimManager implements ClaimManageable, CardManageable, CustomerMa
     public double calculateInsurancePayout(Claim claim) {
         double coPay = calculateCoPay(claim);
         return Math.round((claim.getClaimAmount() - coPay) * 100.0) / 100.0;
+    }
+
+    /**
+     * Reverses the approved amount contribution when a DONE claim is removed.
+     * Keeps the customer's tier-determining total consistent with the claims list.
+     *
+     * @param claim the claim being removed
+     */
+    private void reverseApprovedAmount(Claim claim) {
+        if (claim.getStatus() != ClaimStatus.DONE) return;
+        Customer customer = getCustomerById(claim.getInsuredPersonId());
+        if (customer == null) return;
+        double remaining = customer.getTotalApprovedClaimAmount() - claim.getClaimAmount();
+        customer.setTotalApprovedClaimAmount(Math.max(0, remaining));
     }
 
     /**

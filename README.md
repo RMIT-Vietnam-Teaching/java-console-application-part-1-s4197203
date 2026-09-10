@@ -41,7 +41,7 @@ The system requires login. Use any of the following accounts:
 |---------|----------|----------|------|-------|
 | off01 | officer01 | off123 | Le Van Officer | van.officer@claimshield.com |
 | off02 | officer02 | off456 | Pham Thi Agent | thi.agent@claimshield.com |
-| off03 | officer03 | off789 | Hoang Van处理 | van.hoang@claimshield.com |
+| off03 | officer03 | off789 | Hoang Van Tri | van.tri@claimshield.com |
 
 ### Customer (view own profile/cards/claims, submit claims)
 
@@ -72,16 +72,17 @@ Dates are serialized in ISO-8601 format (e.g., `2026-07-10T14:30:00`).
 
 **Sample Data:** 26 users, 20 customers, 23 cards, 41 claims pre-loaded.
 
-**Saving:** Use the **Save and Logout** option to persist all changes.
+**Saving:** Data is auto-saved to disk after every change, and fully persisted when you choose the **Save and Logout** option.
 
 ### File Formats
 
-**users.txt** `userId|username|password|fullName|email|role|status|customerId[|dependents]`
+**users.txt** `userId|username|password|fullName|email|role|status|customerId[|parentPolicyHolderId]`
 
 ```
 admin01|admin01|admin123|Nguyen Minh Admin|minh.admin@claimshield.com|Admin|Active
 off01|officer01|off123|Le Van Officer|van.officer@claimshield.com|ClaimsOfficer|Active
 cust01|nguyenva|pass123|Nguyen Van An|van.an@gmail.com|Customer|Active|c-1000001
+cust13|nguyentl|pass010|Nguyen Thi Lan|thi.lan.dep@gmail.com|Customer|Active|c-2000001|c-1000001
 ```
 
 **customers.txt** `id|fullName|customerType|parentPolicyHolderId|cardReference|totalApprovedClaimAmount`
@@ -181,7 +182,7 @@ Every add, update, and delete action must append an audit entry recording timest
 
 - **Abstract class:** `User` (base for Admin, ClaimsOfficer, PolicyHolder, Dependent) with abstract `displayDashboard()` method
 - **Enums:** `ClaimStatus`, `CustomerType`, `UserRole`, `UserStatus`, `MembershipTier`
-- **Interfaces:** `ClaimManageable`, `UserManageable` (decoupling business logic from UI)
+- **Interfaces:** `ClaimManageable`, `UserManageable`, `CardManageable`, `CustomerManageable` (decoupling business logic from UI)
 - **Polymorphism:** User hierarchy with role-specific behavior, dynamic dashboard display
 - **Encapsulation:** Private fields with getters/setters
 - **Custom Exceptions:** `AuthenticationException`, `InvalidStatusTransitionException`, `InvalidClaimDateException`
@@ -229,6 +230,8 @@ src/
   interfaces/
     ClaimManageable.java       # Claim operations contract
     UserManageable.java        # User operations contract
+    CardManageable.java        # Insurance card operations contract
+    CustomerManageable.java    # Customer operations contract
   util/
     Validator.java             # Centralized validation rules
   exceptions/

@@ -286,7 +286,7 @@ public class ReportService {
     }
 
     private double calculatePayout(double claimAmount, MembershipTier tier) {
-        return Math.round(claimAmount * (1.0 - tier.getEffectiveCoPayRate()) * 100.0) / 100.0;
+        return Math.round((claimAmount - calculateCoPay(claimAmount, tier)) * 100.0) / 100.0;
     }
 
     private Customer getCustomerById(String id) {

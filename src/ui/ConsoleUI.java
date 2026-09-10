@@ -9,6 +9,7 @@ import service.ActivityLogger;
 import service.AuthenticationService;
 import service.ReportService;
 import service.UserManager;
+import util.Validator;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -197,7 +198,7 @@ public class ConsoleUI {
                 case 3: viewMyClaims(customerId); break;
                 case 4: viewMyTier(customerId); break;
                 case 5: submitMyClaim(customerId); break;
-                case 6: viewClaimDetail(); break;
+                case 6: viewMyClaimDetail(customerId); break;
                 case 7: saveAndLogout(customer); return;
             }
         }
@@ -248,12 +249,24 @@ public class ConsoleUI {
             return;
         }
         String username = input.promptString("Username: ");
+        if (!Validator.isValidUsername(username)) {
+            System.out.println("  Error: Username must be " + Validator.USERNAME_MIN + "-" + Validator.USERNAME_MAX + " characters.");
+            return;
+        }
         String password = input.promptString("Password: ");
+        if (!Validator.isValidPassword(password)) {
+            System.out.println("  Error: Password must be " + Validator.PASSWORD_MIN + "-" + Validator.PASSWORD_MAX + " characters.");
+            return;
+        }
         String fullName = input.promptString("Full Name: ");
         String email = input.promptString("Email: ");
+        if (!Validator.isValidEmail(email)) {
+            System.out.println("  Error: Invalid email address.");
+            return;
+        }
         System.out.println("  Role: 1 = Admin, 2 = ClaimsOfficer, 3 = Customer");
         int roleChoice = input.promptInt("Choose role: ", 1, 3);
-        User user = null;
+        User user;
         switch (roleChoice) {
             case 1:
                 user = new Admin(userId, username, password, fullName, email, UserStatus.ACTIVE);
@@ -261,14 +274,14 @@ public class ConsoleUI {
             case 2:
                 user = new ClaimsOfficer(userId, username, password, fullName, email, UserStatus.ACTIVE);
                 break;
-            case 3:
+            default:
                 String custId = input.promptString("Linked Customer ID: ");
+                if (claimManager.getCustomerById(custId) == null) {
+                    System.out.println("  Error: Customer " + custId + " not found.");
+                    return;
+                }
                 user = new PolicyHolder(userId, username, password, fullName, email, UserStatus.ACTIVE, custId);
                 break;
-        }
-        if (user == null) {
-            System.out.println("  Error: Invalid role selection.");
-            return;
         }
         String error = userManager.addUser(user);
         if (error != null) {
@@ -600,6 +613,32 @@ public class ConsoleUI {
         String id = input.promptString("Claim ID: ");
         Claim claim = claimManager.getClaimById(id);
         if (claim == null) { System.out.println("  Not found."); return; }
+        displayClaimDetail(claim);
+    }
+
+    private void viewMyClaimDetail(String customerId) {
+        String id = input.promptString("Claim ID: ");
+        Claim claim = claimManager.getClaimById(id);
+        if (claim == null) { System.out.println("  Not found."); return; }
+        if (!isClaimVisibleToCustomer(claim, customerId)) {
+            System.out.println("  Access denied: this claim does not belong to you.");
+            return;
+        }
+        displayClaimDetail(claim);
+    }
+
+    private boolean isClaimVisibleToCustomer(Claim claim, String customerId) {
+        if (claim.getInsuredPersonId().equals(customerId)) return true;
+        Customer me = claimManager.getCustomerById(customerId);
+        if (me != null && me.isPolicyHolder()) {
+            Customer insured = claimManager.getCustomerById(claim.getInsuredPersonId());
+            return insured != null && insured.isDependent()
+                    && customerId.equals(insured.getParentPolicyHolderId());
+        }
+        return false;
+    }
+
+    private void displayClaimDetail(Claim claim) {
         Customer insured = claimManager.getCustomerById(claim.getInsuredPersonId());
         InsuranceCard card = claimManager.getCardByNumber(claim.getCardNumber());
 

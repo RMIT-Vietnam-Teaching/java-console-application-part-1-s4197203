@@ -48,7 +48,7 @@ public class TestSuite {
         check("isValidClaimId invalid", !Validator.isValidClaimId("bad"));
         check("isValidCardNumber valid", Validator.isValidCardNumber("1000000001"));
         check("isValidCardNumber invalid", !Validator.isValidCardNumber("123"));
-        check("isValidUserId valid", Validator.isValidUserId("u-1000001"));
+        check("isValidUserId valid", Validator.isValidUserId("admin01"));
         check("isValidUserId invalid", !Validator.isValidUserId("bad"));
         check("isPositiveAmount valid", Validator.isPositiveAmount(100));
         check("isPositiveAmount zero", !Validator.isPositiveAmount(0));
@@ -236,11 +236,12 @@ public class TestSuite {
 
     static void testActivityLogger() {
         System.out.println("\n--- ActivityLogger Tests ---");
-        ActivityLogger logger = new ActivityLogger("data/logs.txt");
+        ActivityLogger logger = new ActivityLogger("data/test_logs.txt");
         logger.log("test-user", "Test Action", "test-entity-123");
         ArrayList<String> logs = logger.getRecentLogs(5);
         check("log entry written", !logs.isEmpty());
         check("log has targetEntityId", logs.get(logs.size() - 1).contains("test-entity-123"));
+        new java.io.File("data/test_logs.txt").delete();
     }
 
     static void testReportService() {
