@@ -26,7 +26,7 @@ public class ReportService {
     }
 
     /**
-     * Generates a comprehensive financial report with totals by status and tier breakdown.
+     * Generates a full financial report with totals by status and tier breakdown.
      *
      * @return formatted financial report string
      */
