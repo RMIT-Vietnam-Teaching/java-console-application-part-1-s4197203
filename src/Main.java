@@ -18,9 +18,9 @@ import java.util.ArrayList;
 public class Main {
     public static void main(String[] args) {
         System.out.println("=======================================");
-        System.out.println("COSC3110/3111 HEALTH INSURANCE SYSTEM");
-        System.out.println("                        Student ID: s4197203");
-        System.out.println("                    Student Name: Nguyen Khanh Nguyen");
+        System.out.println("  COSC3110/3111 HEALTH INSURANCE SYSTEM");
+        System.out.println("         Student ID: s4197203");
+        System.out.println("       Student Name: Nguyen Khanh Nguyen");
         System.out.println("=======================================\n");
 
         String dataDir = "data";
